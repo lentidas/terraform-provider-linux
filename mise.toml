@@ -1,5 +1,7 @@
-[tools]
-go = "1.27.4"
+# The Go version is the go directive of go.mod, the only place it is declared, so that the toolchain used here, in CI and
+# for releases cannot drift from the one the module requires. Renovate bumps it there (see .renovaterc.json).
+[settings]
+idiomatic_version_file_enable_tools = ["go"]
 
 # Where the acceptance tests look for their SSH server; build/docker/compose.yaml publishes it on the same port.
 [env]

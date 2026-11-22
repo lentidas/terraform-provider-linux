@@ -10,7 +10,7 @@ Requirements
 ------------
 
 - [Terraform](https://www.terraform.io/downloads.html) 0.12.x
-- [Go](https://golang.org/doc/install) 1.24 or newer (to build the provider plugin)
+- [Go](https://golang.org/doc/install) at the version of the `go` directive in `go.mod`, which mise installs (to build the provider plugin)
 
 Usage
 -----

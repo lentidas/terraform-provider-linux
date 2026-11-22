@@ -1,6 +1,6 @@
 module github.com/TelkomIndonesia/terraform-provider-linux
 
-go 1.24.0
+go 1.27.4
 
 require (
 	al.essio.dev/pkg/shellescape v1.6.0
