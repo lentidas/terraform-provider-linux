@@ -141,14 +141,20 @@ func (l *linux) setPermission(ctx context.Context, path string, p permission) (e
 
 func (l *linux) getPermission(ctx context.Context, path string) (p permission, err error) {
 	stdout := new(bytes.Buffer)
-	cmd := shellescape.QuoteCommand([]string{"stat", "-c", "%u %g %a", path})
-	err = l.exec(ctx, &remote.Cmd{Command: cmd, Stdout: stdout})
+	stderr := new(bytes.Buffer)
+	// Only ENOENT means absence; other stat failures must not cause Terraform to forget a managed resource.
+	cmd := "LC_ALL=C " + shellescape.QuoteCommand([]string{"stat", "-c", "%u %g %a", "--", path})
+	err = l.exec(ctx, &remote.Cmd{Command: cmd, Stdout: stdout, Stderr: stderr})
 	var exitError *remote.ExitError
-	if errors.As(err, &exitError) {
+	if errors.As(err, &exitError) && exitError.ExitStatus == 1 &&
+		strings.HasSuffix(stderr.String(), ": No such file or directory\n") {
 		err = errPathNotExist
 		return
 	}
 	if err != nil {
+		if stderr.Len() > 0 {
+			err = fmt.Errorf("%w: %s", err, strings.TrimSpace(stderr.String()))
+		}
 		return
 	}
 

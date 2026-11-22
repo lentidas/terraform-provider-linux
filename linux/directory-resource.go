@@ -146,14 +146,18 @@ func (h handlerDirectoryResource) Read(ctx context.Context, rd *schema.ResourceD
 	}
 
 	d, err := l.readDirectory(ctx, cast.ToString(rd.Get(attrDirectoryPath)))
-	if err != nil && !errors.Is(err, errPathNotExist) {
+	if errors.Is(err, errPathNotExist) {
+		rd.SetId("")
+		return
+	}
+	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	d.overwrite = cast.ToBool(rd.Get(attrDirectoryOverwrite))
 	d.recyclePath = cast.ToString(rd.Get(attrDirectoryRecyclePath))
 	if err = h.updateResourceData(d, rd); err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 	return
 }

@@ -178,14 +178,18 @@ func (h handlerFileResource) Read(ctx context.Context, rd *schema.ResourceData, 
 		return diag.FromErr(err)
 	}
 	f, err := l.readFile(ctx, cast.ToString(rd.Get(attrFilePath)), cast.ToBool(rd.Get(attrFileIgnoreContent)))
-	if err != nil && !errors.Is(err, errPathNotExist) {
+	if errors.Is(err, errPathNotExist) {
+		rd.SetId("")
+		return
+	}
+	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	f.overwrite = cast.ToBool(rd.Get(attrFileOverwrite))
 	f.recyclePath = cast.ToString(rd.Get(attrFileRecyclePath))
 	if err = h.updateResourceData(f, rd); err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 	return
 }

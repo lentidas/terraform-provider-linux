@@ -9,6 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestLinuxFileRead(t *testing.T) {
+	testResourceRead(t, fileResource())
+}
+
 func TestAccLinuxFileBasic(t *testing.T) {
 	conf1 := tfConf{
 		Provider: testAccProvider,
