@@ -1,0 +1,22 @@
+---
+page_title: "{{ .Name }} {{ .Type }} - {{ .RenderedProviderName }}"
+subcategory: ""
+description: |-
+{{ .Description | plainmarkdown | trimspace | prefixlines "  " }}
+---
+
+# {{ .Name }} ({{ .Type }})
+
+{{ .Description | trimspace }}
+
+## Example Usage
+
+{{ tffile .ExampleFile }}
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Updating the instructions
+
+This resource differs from a regular one: besides the data that describes the actual resource, it holds the instructions to create, read, update and delete it. `lifecycle_commands` and `interpreter` are the instructions, and the other arguments are the data. Changing the instructions needs special handling, otherwise unwanted things would happen, such as the `update` commands running when only the `delete` commands changed.
+
+When `lifecycle_commands` or `interpreter` change, the current `read` commands are first run with the existing interpreter, which is unavoidable, and then the new `read` commands are run if they changed. No other argument may change in the same apply, or an error is raised. Once the change is applied, the next run uses the new instructions and the other arguments can be changed again.
