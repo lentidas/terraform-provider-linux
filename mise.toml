@@ -1,0 +1,41 @@
+[tools]
+go = "1.26.11"
+
+# Where the acceptance tests look for their SSH server; build/docker/compose.yaml publishes it on the same port.
+[env]
+TEST_ACC_LINUX_PROVIDER_HOST = "localhost"
+TEST_ACC_LINUX_PROVIDER_PORT = "2222"
+
+[tasks.build]
+description = "Build the provider binary"
+run = "go build"
+
+[tasks.build-local]
+description = "Build the provider into the local OpenTofu filesystem mirror (see README)"
+usage = 'arg "[version]" help="Version directory of the mirror package" default="0.7.2"'
+run = 'go build -o "build/providers/registry.opentofu.org/lentidas/linux/${usage_version}/$(go env GOOS)_$(go env GOARCH)/terraform-provider-linux_v${usage_version}"'
+
+[tasks.vet]
+description = "Run go vet"
+run = "go vet ./..."
+
+# The communicator is a nested module replaced in go.mod, so ./... does not reach its tests. Extra arguments are
+# appended, e.g. `mise run test -- -race -run TestLinuxFileRead`.
+[tasks.test]
+description = "Run the unit tests (no SSH server needed)"
+env = { TF_ACC = "", SSH_UPLOAD_TEST = "" }
+run = "go test ./... github.com/hashicorp/terraform/communicator/..."
+
+[tasks.ssh-up]
+description = "Build and start the disposable SSH server for the acceptance tests"
+run = "docker compose -f build/docker/compose.yaml up --build --detach --wait"
+
+[tasks.ssh-down]
+description = "Stop and remove the acceptance test SSH server"
+run = "docker compose -f build/docker/compose.yaml down --volumes"
+
+[tasks.testacc]
+description = "Run the acceptance tests against the local SSH server (starts it if needed)"
+depends = ["ssh-up"]
+env = { TF_ACC = "1" }
+run = "go test ./... -timeout 120m"
