@@ -2,6 +2,14 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "packageRules": [
     {
+      "description": "Bump the go directive of go.mod along with new Go releases, which Renovate does not do by default. It is the only place the Go version is declared, since mise reads it from there.",
+      "matchManagers": ["gomod"],
+      "matchFileNames": ["go.mod"],
+      "matchDepNames": ["go"],
+      "matchDepTypes": ["golang"],
+      "rangeStrategy": "bump"
+    },
+    {
       "description": "Replaced by the local copy in internal/workaround, so a registry version bump changes nothing",
       "matchManagers": ["gomod"],
       "matchPackageNames": ["github.com/hashicorp/terraform"],
