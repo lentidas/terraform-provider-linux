@@ -45,8 +45,11 @@ run = "docker compose -f build/docker/compose.yaml up --build --detach --wait"
 description = "Stop and remove the acceptance test SSH server"
 run = "docker compose -f build/docker/compose.yaml down --volumes"
 
+# The SDK's acceptance test framework drives a Terraform-compatible CLI. It is pointed at OpenTofu, installed on demand
+# at the pinned version, and fetches the `null` provider the tests use from the OpenTofu registry.
 [tasks.testacc]
-description = "Run the acceptance tests against the local SSH server (starts it if needed)"
+description = "Run the acceptance tests against the local SSH server, using OpenTofu (starts the server if needed)"
 depends = ["ssh-up"]
-env = { TF_ACC = "1" }
-run = "go test ./... -timeout 120m"
+tools = { opentofu = "1.13.9" }
+env = { TF_ACC = "1", TF_ACC_PROVIDER_HOST = "registry.opentofu.org" }
+run = 'TF_ACC_TERRAFORM_PATH="$(command -v tofu)" go test ./... -timeout 120m'
