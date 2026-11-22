@@ -12,6 +12,11 @@ import (
 const (
 	attrProviderID = "id"
 
+	// Shared by every resource and data source that accepts a provider_override block.
+	descProviderOverride = "SSH connection settings used by this object instead of the provider configuration, as a " +
+		"workaround for dynamic providers. It accepts the same arguments as the provider plus an `id`, which " +
+		"identifies the connection in the connection pool and for locking."
+
 	attrProviderHost    = "host"
 	attrProviderPort    = "port"
 	attrProviderHostKey = "host_key"

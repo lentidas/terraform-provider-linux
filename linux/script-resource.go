@@ -41,40 +41,59 @@ const (
 
 var schemaScriptResource = map[string]*schema.Schema{
 	attrScriptProviderOverride: {
-		Type:     schema.TypeList,
-		Optional: true,
-		MaxItems: 1,
+		Description: descProviderOverride,
+		Type:        schema.TypeList,
+		Optional:    true,
+		MaxItems:    1,
 		Elem: &schema.Resource{
 			Schema: subSchemaProviderOverride,
 		},
 	},
 
 	attrScriptLifecycleCommands: {
+		Description: "Commands uploaded and executed on the remote host in the matching phase of the Terraform " +
+			"lifecycle. For long scripts, use the `file` function.",
 		Type:     schema.TypeList,
 		Required: true,
 		MaxItems: 1,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				attrScriptLifecycleCommandCreate: {
-					Type:     schema.TypeString,
-					Required: true,
+					Description: "Commands executed in the create phase.",
+					Type:        schema.TypeString,
+					Required:    true,
 				},
 				attrScriptLifecycleCommandUpdate: {
+					Description: "Commands executed in the update phase, with the previous `output` available on stdin. " +
+						"To keep plans consistent, especially when `output` is a dependency of other objects, they " +
+						"should leave `output` as `create` would on a resource that does not exist. When omitted, any " +
+						"detected change recreates the resource instead.",
 					Type:     schema.TypeString,
 					Optional: true,
 				},
 				attrScriptLifecycleCommandRead: {
+					Description: "Commands executed in the read phase and after `create` or `update`. Their standard " +
+						"output is recorded in `output`, and a change in it triggers an update or a recreation. If they " +
+						"fail, the resource is considered absent and is planned for recreation, and in that case " +
+						"`delete` is not executed. Before applying, either accept that the resource is gone, fix the " +
+						"host so the commands succeed, or update them. They should not write anything, or at least be " +
+						"safe to retry.",
 					Type:     schema.TypeString,
 					Required: true,
 				},
 				attrScriptLifecycleCommandDelete: {
-					Type:     schema.TypeString,
-					Required: true,
+					Description: "Commands executed in the delete phase.",
+					Type:        schema.TypeString,
+					Required:    true,
 				},
 			},
 		},
 	},
 	attrScriptInterpreter: {
+		Description: "Interpreter used to run each lifecycle command, as a program followed by its arguments. The path of " +
+			"the uploaded script is appended as the last argument. When empty, the script is executed directly, " +
+			"using its `#!` line or `/bin/sh`. Changing it follows the rules described in [Updating the " +
+			"instructions](#updating-the-instructions).",
 		Type:     schema.TypeList,
 		Optional: true,
 		Elem: &schema.Schema{
@@ -83,44 +102,53 @@ var schemaScriptResource = map[string]*schema.Schema{
 	},
 
 	attrScriptTriggers: {
-		Type:     schema.TypeMap,
-		Optional: true,
-		ForceNew: true,
+		Description: "Values whose changes force the resource to be recreated, like `triggers` of `null_resource`.",
+		Type:        schema.TypeMap,
+		Optional:    true,
+		ForceNew:    true,
 	},
 	attrScriptEnvironment: {
-		Type:     schema.TypeMap,
-		Optional: true,
-		Elem:     schema.TypeString,
+		Description: "Environment variables available to each lifecycle command.",
+		Type:        schema.TypeMap,
+		Optional:    true,
+		Elem:        schema.TypeString,
 	},
 	attrScriptSensitiveEnvironment: {
+		Description: "Like `environment`, but marked sensitive so Terraform hides the values in its output. On a " +
+			"duplicate name, the value defined here wins. The values are part of the command line sent to the host, " +
+			"so they can still appear in debug logs (`TF_LOG=debug`).",
 		Type:      schema.TypeMap,
 		Optional:  true,
 		Elem:      schema.TypeString,
 		Sensitive: true,
 	},
 	attrScriptWorkingDirectory: {
-		Type:     schema.TypeString,
-		Optional: true,
-		Default:  ".",
+		Description: "Directory in which each lifecycle command runs. It is created if it does not exist. Defaults to `.`.",
+		Type:        schema.TypeString,
+		Optional:    true,
+		Default:     ".",
 	},
 
 	attrScriptOutput: {
-		Type:     schema.TypeString,
-		Computed: true,
+		Description: "Standard output of the `read` commands.",
+		Type:        schema.TypeString,
+		Computed:    true,
 	},
 
 	attrScriptDirtyOutput: {
-		Type:     schema.TypeString,
-		Optional: true,
-		Default:  "",
+		Description: "Internal state used by the provider to detect changes of `output`. It cannot be set.",
+		Type:        schema.TypeString,
+		Optional:    true,
+		Default:     "",
 		ValidateDiagFunc: func(i interface{}, c cty.Path) (d diag.Diagnostics) {
 			return diag.Errorf("`%s` should not be set from configuration.", attrScriptDirtyOutput)
 		},
 	},
 	attrScriptFaultyOutput: {
-		Type:     schema.TypeString,
-		Optional: true,
-		Default:  "",
+		Description: "Internal state used by the provider to mark failed `read` commands. It cannot be set.",
+		Type:        schema.TypeString,
+		Optional:    true,
+		Default:     "",
 		ValidateDiagFunc: func(i interface{}, c cty.Path) (d diag.Diagnostics) {
 			return diag.Errorf("`%s` should not be set from configuration.", attrScriptFaultyOutput)
 		},
@@ -398,6 +426,8 @@ func (h handlerScriptResource) CustomizeDiff(c context.Context, rd *schema.Resou
 func scriptResource() *schema.Resource {
 	var h handlerScriptResource
 	return &schema.Resource{
+		Description: "Manages an arbitrary resource through commands that are uploaded to the host and executed there " +
+			"in each phase of the Terraform lifecycle.",
 		Schema:        schemaScriptResource,
 		CreateContext: h.Create,
 		ReadContext:   h.Read,

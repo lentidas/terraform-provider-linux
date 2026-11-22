@@ -15,13 +15,24 @@ var schemaScriptDataSource = func() (m map[string]*schema.Schema) {
 			m[k] = v
 
 		case attrScriptLifecycleCommands:
+			read := *v.Elem.(*schema.Resource).Schema[attrScriptLifecycleCommandRead]
+			read.Description = "Commands executed to obtain the data. Their standard output is recorded in `output`."
+
 			m[k] = new(schema.Schema)
 			*m[k] = *v
+			m[k].Description = "Commands uploaded and executed on the remote host. For long scripts, use the `file` function."
 			m[k].Elem = &schema.Resource{
 				Schema: map[string]*schema.Schema{
-					attrScriptLifecycleCommandRead: v.Elem.(*schema.Resource).Schema[attrScriptLifecycleCommandRead],
+					attrScriptLifecycleCommandRead: &read,
 				},
 			}
+
+		case attrScriptInterpreter:
+			m[k] = new(schema.Schema)
+			*m[k] = *v
+			m[k].Description = "Interpreter used to run the `read` commands, as a program followed by its arguments. The " +
+				"path of the uploaded script is appended as the last argument. When empty, the script is executed " +
+				"directly, using its `#!` line or `/bin/sh`."
 
 		case attrScriptTriggers:
 		case attrScriptDirtyOutput:
@@ -52,6 +63,7 @@ func (h handlerScriptDataSource) Read(ctx context.Context, rd *schema.ResourceDa
 func scriptDataSource() *schema.Resource {
 	h := handlerScriptDataSource{hsr: handlerScriptResource{}}
 	return &schema.Resource{
+		Description: "Reads arbitrary data by executing commands on the remote host.",
 		Schema:      schemaScriptDataSource,
 		ReadContext: h.Read,
 	}
