@@ -1,0 +1,15 @@
+---
+name: terraform-provider-linux-test
+
+services:
+  sshd:
+    build: .
+    image: terraform-provider-linux-test-sshd:local
+    init: true
+    environment:
+      SSH_ROOT_PASSWORD: root
+    volumes:
+    - ../../linux/testdata/id_rsa.pub:/run/test-authorized-keys:ro
+    ports:
+    # Loopback only: root logs in with a well-known password.
+    - "127.0.0.1:${TEST_ACC_LINUX_PROVIDER_PORT:-2222}:22"
