@@ -26,8 +26,19 @@ description = "Run the unit tests (no SSH server needed)"
 env = { TF_ACC = "", SSH_UPLOAD_TEST = "" }
 run = "go test ./... github.com/hashicorp/terraform/communicator/..."
 
+[tasks.ssh-key]
+description = "Generate the throwaway SSH key pair of the acceptance tests, unless it already exists"
+run = '''
+if [ ! -f build/ssh/id_ed25519 ] || [ ! -f build/ssh/id_ed25519.pub ]; then
+  mkdir -p build/ssh
+  rm -f build/ssh/id_ed25519 build/ssh/id_ed25519.pub
+  ssh-keygen -q -t ed25519 -N "" -C terraform-provider-linux-tests -f build/ssh/id_ed25519
+fi
+'''
+
 [tasks.ssh-up]
 description = "Build and start the disposable SSH server for the acceptance tests"
+depends = ["ssh-key"]
 run = "docker compose -f build/docker/compose.yaml up --build --detach --wait"
 
 [tasks.ssh-down]

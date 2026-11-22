@@ -1,4 +1,5 @@
 .env
 /.cache/
 /build/providers/
+/build/ssh/
 dist/
