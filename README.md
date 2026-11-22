@@ -1,7 +1,7 @@
 Terraform Provider Linux
 ========================
 
-[![Build Status](https://cloud.drone.io/api/badges/TelkomIndonesia/terraform-provider-linux/status.svg?branch=master)](https://cloud.drone.io/TelkomIndonesia/terraform-provider-linux)
+[![Release](https://img.shields.io/github/v/release/lentidas/terraform-provider-linux)](https://github.com/lentidas/terraform-provider-linux/releases) [![Tests](https://img.shields.io/github/actions/workflow/status/lentidas/terraform-provider-linux/go-tests.yaml?label=tests)](https://github.com/lentidas/terraform-provider-linux/actions/workflows/go-tests.yaml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/TelkomIndonesia/terraform-provider-linux)](https://goreportcard.com/report/github.com/TelkomIndonesia/terraform-provider-linux)
 
 - Website: <https://registry.terraform.io/namespaces/TelkomIndonesia>
@@ -122,3 +122,12 @@ The acceptance tests need an SSH server that root can log in to. [`build/docker`
 
 > [!WARNING]
 > Never point the acceptance tests at a machine that matters: they create, change and delete files as root.
+
+### Releases and versioning
+
+Versions follow [Semantic Versioning](https://semver.org/) and are derived by [release-please](https://github.com/googleapis/release-please) from the [Conventional Commits](https://www.conventionalcommits.org/) merged into `main` (for example `fix: ...` or `feat: ...`), which the `commits-checks` workflow verifies on pull requests. Release-please keeps a `chore: release <version>` pull request open with the changelog. Merging it creates the `v<version>` tag and GitHub release, and the tag triggers GoReleaser to build, sign and attach the provider archives. While the major version is 0, a breaking change bumps the minor version and a feature bumps the patch version. The version history before the fork is excluded through `bootstrap-sha` in `.release-please-config.json`, which can be removed once the first release pull request is merged.
+
+The workflows read their credentials from repository secrets (for example `REPOSITORY_BOT_APP_ID` for the GitHub App and `GPG_PRIVATE_KEY` for signing); see `.github/workflows/` for the complete list. A GitHub App token is used instead of `GITHUB_TOKEN` because tags created with the latter do not trigger the release workflow. Dependency updates come from Renovate, configured in `.renovaterc.json`.
+
+> [!IMPORTANT]
+> A GitHub release is not a registry listing. Publishing `lentidas/linux` to the OpenTofu registry is a separate step, and the first automated release is expected to also be `0.7.2`, the version used by the local mirror build above. Switch from the mirror to the released package with `tofu init -upgrade` and review the regenerated lock file.
