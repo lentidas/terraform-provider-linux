@@ -116,9 +116,10 @@ The available tasks are:
 | `mise run vet` | Runs `go vet` |
 | `mise run test` | Runs the unit tests, including the nested SSH communicator module; extra `go test` arguments go after `--`, for example `mise run test -- -race -run TestLinuxFileRead` |
 | `mise run testacc` | Starts the SSH server for the acceptance tests if needed, then runs them |
+| `mise run ssh-key` | Generates the throwaway SSH key pair of the acceptance tests unless it exists (also done by `ssh-up`) |
 | `mise run ssh-up` / `mise run ssh-down` | Starts or removes the SSH server on its own |
 
-The acceptance tests need an SSH server that root can log in to. [`build/docker`](build/docker) defines a disposable one (Debian with OpenSSH, built locally, no third-party image), authorizing the key in `linux/testdata` and the password `root`. It listens on `127.0.0.1:2222` only, and `testacc` points the tests there through `TEST_ACC_LINUX_PROVIDER_HOST` and `TEST_ACC_LINUX_PROVIDER_PORT` (see `mise.toml`). Docker with Compose and a `terraform` or `tofu` CLI on the `PATH` are required. To run the tests against another machine, set the `TEST_ACC_LINUX_PROVIDER_*` variables [read by the test code](linux/linux_test.go) yourself and call `go test` directly with `TF_ACC=1`.
+The acceptance tests need an SSH server that root can log in to. [`build/docker`](build/docker) defines a disposable one (Debian with OpenSSH, built locally, no third-party image), authorizing a throwaway ed25519 key and the password `root`. `mise run ssh-key` generates the key pair into the git-ignored `build/ssh` directory when it does not exist, so no private key is committed; the tests read it from there, or from `TEST_ACC_LINUX_PROVIDER_PRIVATE_KEY_FILE`, and fall back to the password without it. It listens on `127.0.0.1:2222` only, and `testacc` points the tests there through `TEST_ACC_LINUX_PROVIDER_HOST` and `TEST_ACC_LINUX_PROVIDER_PORT` (see `mise.toml`). Docker with Compose and a `terraform` or `tofu` CLI on the `PATH` are required. To run the tests against another machine, set the `TEST_ACC_LINUX_PROVIDER_*` variables [read by the test code](linux/linux_test.go) yourself and call `go test` directly with `TF_ACC=1`.
 
 > [!WARNING]
 > Never point the acceptance tests at a machine that matters: they create, change and delete files as root.
