@@ -1,0 +1,18 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "packageRules": [
+    {
+      "description": "Replaced by the local copy in internal/workaround, so a registry version bump changes nothing",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["github.com/hashicorp/terraform"],
+      "enabled": false
+    },
+    {
+      "description": "The SSH stack is imported through the replaced module, so its golang.org/x dependencies are only indirect here",
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["indirect"],
+      "matchPackageNames": ["golang.org/x/**"],
+      "enabled": true
+    }
+  ]
+}
