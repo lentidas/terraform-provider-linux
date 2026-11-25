@@ -14,15 +14,15 @@ permissions:
 
 jobs:
   # A skipped job counts as passed for required checks, which a workflow filtered out with `on.<event>.paths` does not.
-  changes:
-    uses: ./.github/workflows/changes.yaml
+  changes-filter:
+    uses: ./.github/workflows/changes-filter.yaml
     permissions:
       contents: read
       pull-requests: read
 
   go-tests:
-    needs: changes
-    if: ${{ needs.changes.outputs.tests == 'true' }}
+    needs: changes-filter
+    if: ${{ needs.changes-filter.outputs.tests == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -51,8 +51,8 @@ jobs:
 
   # Runs the acceptance tests against a throwaway SSH server built from build/docker, never against a real host.
   acceptance-tests:
-    needs: changes
-    if: ${{ needs.changes.outputs.tests == 'true' }}
+    needs: changes-filter
+    if: ${{ needs.changes-filter.outputs.tests == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
 

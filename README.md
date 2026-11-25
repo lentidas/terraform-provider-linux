@@ -133,7 +133,7 @@ The OpenTofu registry reads the documentation from the repository at the release
 
 ### Continuous integration
 
-The `tests`, `docs` and `goreleaser-check` workflows run on pull requests and on pushes to `main`, but their jobs only run when a file they depend on changed. The mapping lives in `.github/path-filters.yaml` and is evaluated by the reusable `changes` workflow. The filtering is done with job-level conditions instead of `on.<event>.paths`, because a workflow that is not triggered never reports its checks, which would leave the required checks of the `main` ruleset pending forever, whereas a skipped job counts as passed. Add the path to the filter file when a workflow starts depending on a new file. The `commits-checks` workflow always runs, and a release pull request, which only touches the changelog and the version manifest, skips everything else.
+The `tests`, `docs` and `goreleaser-check` workflows run on pull requests and on pushes to `main`, but their jobs only run when a file they depend on changed. The mapping lives in `.github/path-filters.yaml` and is evaluated by the reusable `changes-filter` workflow. The filtering is done with job-level conditions instead of `on.<event>.paths`, because a workflow that is not triggered never reports its checks, which would leave the required checks of the `main` ruleset pending forever, whereas a skipped job counts as passed. Add the path to the filter file when a workflow starts depending on a new file. The `commits-checks` workflow always runs, and a release pull request, which only touches the changelog and the version manifest, skips everything else.
 
 ### Releases and versioning
 

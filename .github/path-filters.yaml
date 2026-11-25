@@ -1,5 +1,5 @@
-# Which files each CI workflow depends on, read by the `changes` workflow. A workflow whose filter matches nothing in a
-# pull request or push has its jobs skipped, and a skipped job still satisfies the required status checks of the `main`
+# Which files each CI workflow depends on, read by the `changes-filter` workflow. A workflow whose filter matches nothing
+# in a pull request or push has its jobs skipped, and a skipped job still satisfies the required status checks of the `main`
 # ruleset. Keep these in sync when adding a file that a workflow reads.
 
 # Everything that changes the compiled provider or how the tooling builds it.
@@ -10,7 +10,7 @@ common: &common
 - internal/**
 - mise.toml
 - .github/path-filters.yaml
-- .github/workflows/changes.yaml
+- .github/workflows/changes-filter.yaml
 
 tests:
 - *common

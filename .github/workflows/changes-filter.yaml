@@ -1,4 +1,4 @@
-name: "changes"
+name: "changes-filter"
 
 # Reusable workflow that tells the calling workflow which filters of .github/path-filters.yaml match the changed files.
 # The filtering is done by the callers at job level instead of with `on.<event>.paths`, because a workflow that is not
@@ -8,19 +8,19 @@ on:
     outputs:
       tests:
         description: "Go code, test or test server changed"
-        value: ${{ jobs.changes.outputs.tests }}
+        value: ${{ jobs.changes-filter.outputs.tests }}
       docs:
         description: "Go schema, documentation sources or documentation tooling changed"
-        value: ${{ jobs.changes.outputs.docs }}
+        value: ${{ jobs.changes-filter.outputs.docs }}
       release:
         description: "Go code or release configuration changed"
-        value: ${{ jobs.changes.outputs.release }}
+        value: ${{ jobs.changes-filter.outputs.release }}
 
 permissions:
   contents: read
 
 jobs:
-  changes:
+  changes-filter:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -34,7 +34,7 @@ jobs:
     - name: Check out repository
       uses: actions/checkout@v6.0.2
 
-    - name: Match the changed files against the filters
+    - name: Check which files changed against the filters
       id: filter
       uses: dorny/paths-filter@v4.0.3
       with:
