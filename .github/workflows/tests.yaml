@@ -1,5 +1,5 @@
 ---
-name: "go-tests"
+name: "tests"
 
 on:
   push:
