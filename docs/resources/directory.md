@@ -56,7 +56,7 @@ Optional:
 - `agent_identity` (String) The preferred identity from the ssh agent for authentication.
 - `bastion_certificate` (String) The contents of a signed CA Certificate. The certificate argument must be used in conjunction with a `bastion_private_key`. These can be loaded from a file on disk using the the `file` function.
 - `bastion_host` (String) Setting this enables the bastion Host connection. This host will be connected to first, and then the `host` connection will be made from there.
-- `bastion_host_key` (String) The public key from the remote host or the signing CA, used to verify the host connection.
+- `bastion_host_key` (String) The public key from the remote host or the signing CA, used to verify the host connection. Defaults to the value of the `host_key` field.
 - `bastion_password` (String, Sensitive) The password we should use for the bastion host. Defaults to the value of the `password` field.
 - `bastion_port` (Number) The port to use connect to the bastion host. Defaults to the value of the `port` field.
 - `bastion_private_key` (String, Sensitive) The contents of an SSH key file to use for the bastion host. These can be loaded from a file on disk using the `file` function. Defaults to the value of the `private_key` field.

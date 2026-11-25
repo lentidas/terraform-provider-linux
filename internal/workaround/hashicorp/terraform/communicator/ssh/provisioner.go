@@ -136,6 +136,9 @@ func parseConnectionInfo(s *terraform.InstanceState) (*connectionInfo, error) {
 		if connInfo.BastionPort == 0 {
 			connInfo.BastionPort = connInfo.Port
 		}
+		if connInfo.BastionHostKey == "" {
+			connInfo.BastionHostKey = connInfo.HostKey
+		}
 	}
 
 	return connInfo, nil
@@ -185,7 +188,7 @@ func prepareSSHConfig(connInfo *connectionInfo) (*sshConfig, error) {
 			host:        bastionHost,
 			privateKey:  connInfo.BastionPrivateKey,
 			password:    connInfo.BastionPassword,
-			hostKey:     connInfo.HostKey,
+			hostKey:     connInfo.BastionHostKey,
 			certificate: connInfo.BastionCertificate,
 			sshAgent:    sshAgent,
 		})
