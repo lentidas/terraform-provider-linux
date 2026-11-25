@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"regexp"
+	"sort"
 	"strings"
 
 	"al.essio.dev/pkg/shellescape"
@@ -14,19 +16,53 @@ import (
 
 type env map[string]string
 
-func (e env) serialize(sep string) string {
-	b := strings.Builder{}
-	first := true
+var envNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+func (e env) validate() error {
+	for k := range e {
+		if !envNamePattern.MatchString(k) {
+			return fmt.Errorf("invalid environment variable name %q", k)
+		}
+	}
+	return nil
+}
+
+// overlay returns a copy of e in which the entries of o win.
+func (e env) overlay(o env) env {
+	m := make(env, len(e)+len(o))
 	for k, v := range e {
-		if first {
-			first = false
-		} else {
+		m[k] = v
+	}
+	for k, v := range o {
+		m[k] = v
+	}
+	return m
+}
+
+// mask keeps the names and hides the values.
+func (e env) mask() env {
+	m := make(env, len(e))
+	for k := range e {
+		m[k] = "***"
+	}
+	return m
+}
+
+func (e env) serialize(sep string) string {
+	keys := make([]string, 0, len(e))
+	for k := range e {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	b := strings.Builder{}
+	for i, k := range keys {
+		if i > 0 {
 			b.WriteString(sep)
 		}
-
 		b.WriteString(k)
 		b.WriteString("=")
-		b.WriteString(shellescape.Quote(v))
+		b.WriteString(shellescape.Quote(e[k]))
 	}
 	return b.String()
 }
@@ -42,10 +78,12 @@ func (e env) multiline() string {
 type script struct {
 	l *linux
 
-	workdir     string
-	env         env
-	interpreter []string
-	body        string
+	workdir string
+	env     env
+	// sensitiveEnv wins over env on a duplicate name, and its values never reach logs or error messages.
+	sensitiveEnv env
+	interpreter  []string
+	body         string
 
 	stdin io.Reader
 }
@@ -82,23 +120,34 @@ func (sc *script) upload(ctx context.Context) (path string, err error) {
 }
 
 func (sc *script) exec(ctx context.Context) (res string, err error) {
+	if err = sc.env.validate(); err != nil {
+		return
+	}
+	if err = sc.sensitiveEnv.validate(); err != nil {
+		return
+	}
+
 	path, err := sc.upload(ctx)
 	if err != nil {
 		return
 	}
 	defer func() { _ = sc.l.remove(ctx, path, "") }()
 
-	cmd := fmt.Sprintf(`{ %s && %s && %s %s ;}`,
-		shellescape.QuoteCommand([]string{"mkdir", "-p", sc.workdir}),
-		shellescape.QuoteCommand([]string{"cd", sc.workdir}),
-		sc.env.inline(), shellescape.QuoteCommand(append(sc.interpreter, path)),
-	)
+	command := func(e env) string {
+		return fmt.Sprintf(`{ %s && %s && %s %s ;}`,
+			shellescape.QuoteCommand([]string{"mkdir", "-p", sc.workdir}),
+			shellescape.QuoteCommand([]string{"cd", sc.workdir}),
+			e.inline(), shellescape.QuoteCommand(append(sc.interpreter, path)),
+		)
+	}
+	cmd := command(sc.env.overlay(sc.sensitiveEnv))
 	stdout, stderr := new(bytes.Buffer), new(bytes.Buffer)
 	err = sc.l.exec(ctx, &remote.Cmd{
-		Command: cmd,
-		Stdin:   sc.stdin,
-		Stdout:  stdout,
-		Stderr:  stderr,
+		Command:  cmd,
+		Redacted: command(sc.env.overlay(sc.sensitiveEnv.mask())),
+		Stdin:    sc.stdin,
+		Stdout:   stdout,
+		Stderr:   stderr,
 	})
 	if err != nil {
 		err = fmt.Errorf("stderr: %s\nerror: %w", stderr, err)

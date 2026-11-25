@@ -356,7 +356,7 @@ func (c *Communicator) Start(cmd *remote.Cmd) error {
 		}
 	}
 
-	log.Printf("[DEBUG] starting remote command: %s", cmd.Command)
+	log.Printf("[DEBUG] starting remote command: %s", cmd.Loggable())
 	err = session.Start(strings.TrimSpace(cmd.Command) + "\n")
 	if err != nil {
 		return err
@@ -377,7 +377,7 @@ func (c *Communicator) Start(cmd *remote.Cmd) error {
 		}
 
 		cmd.SetExitStatus(exitStatus, err)
-		log.Printf("[DEBUG] remote command exited with '%d': %s", exitStatus, cmd.Command)
+		log.Printf("[DEBUG] remote command exited with '%d': %s", exitStatus, cmd.Loggable())
 	}()
 
 	return nil

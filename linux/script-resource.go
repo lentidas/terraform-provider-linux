@@ -115,8 +115,11 @@ var schemaScriptResource = map[string]*schema.Schema{
 	},
 	attrScriptSensitiveEnvironment: {
 		Description: "Like `environment`, but marked sensitive so Terraform hides the values in its output. On a " +
-			"duplicate name, the value defined here wins. The values are part of the command line sent to the host, " +
-			"so they can still appear in debug logs (`TF_LOG=debug`).",
+			"duplicate name, the value defined here wins. The provider keeps the values out of its own logs, error " +
+			"messages and the internal `__faulty_output__` and `__dirty_output__` attributes; the map itself is " +
+			"stored in state, marked sensitive. They are still part of the command line executed on the host, " +
+			"where other local users can see them in the process list while a lifecycle command runs, and a " +
+			"command that prints them can expose them in `output`.",
 		Type:      schema.TypeMap,
 		Optional:  true,
 		Elem:      schema.TypeString,
@@ -243,13 +246,11 @@ func (h handlerScriptResource) newScript(rd *schema.ResourceData, l *linux, attr
 	s = &script{
 		l: l,
 
-		workdir:     cast.ToString(rd.Get(attrScriptWorkingDirectory)),
-		env:         cast.ToStringMapString(rd.Get(attrScriptEnvironment)),
-		interpreter: cast.ToStringSlice(rd.Get(attrScriptInterpreter)),
-		body:        cast.ToStringMapString(lc)[attrLifeCycle],
-	}
-	for k, v := range cast.ToStringMapString(rd.Get(attrScriptSensitiveEnvironment)) {
-		s.env[k] = v
+		workdir:      cast.ToString(rd.Get(attrScriptWorkingDirectory)),
+		env:          cast.ToStringMapString(rd.Get(attrScriptEnvironment)),
+		sensitiveEnv: cast.ToStringMapString(rd.Get(attrScriptSensitiveEnvironment)),
+		interpreter:  cast.ToStringSlice(rd.Get(attrScriptInterpreter)),
+		body:         cast.ToStringMapString(lc)[attrLifeCycle],
 	}
 	return
 }
