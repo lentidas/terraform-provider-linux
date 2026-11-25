@@ -15,7 +15,7 @@ jobs:
       id: app-token
       uses: actions/create-github-app-token@v3.2.0
       with:
-        app-id: ${{ secrets.REPOSITORY_BOT_APP_ID }}
+        client-id: ${{ secrets.REPOSITORY_BOT_APP_ID }}
         private-key: ${{ secrets.REPOSITORY_BOT_PRIVATE_KEY }}
         owner: ${{ github.repository_owner }}
         permission-contents: write
