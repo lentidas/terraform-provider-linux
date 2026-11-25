@@ -1,0 +1,68 @@
+# The Go version is the go directive of go.mod, the only place it is declared, so that the toolchain used here, in CI and
+# for releases cannot drift from the one the module requires. Renovate bumps it there (see .renovaterc.json).
+[settings]
+idiomatic_version_file_enable_tools = ["go"]
+
+# Where the acceptance tests look for their SSH server; build/docker/compose.yaml publishes it on the same port.
+[env]
+TEST_ACC_LINUX_PROVIDER_HOST = "localhost"
+TEST_ACC_LINUX_PROVIDER_PORT = "2222"
+
+[tasks.build]
+description = "Build the provider binary"
+run = "go build"
+
+[tasks.build-local]
+description = "Build the provider into the local OpenTofu filesystem mirror (see README)"
+usage = 'arg "[version]" help="Version directory of the mirror package" default="0.7.2"'
+run = 'go build -o "build/providers/registry.opentofu.org/lentidas/linux/${usage_version}/$(go env GOOS)_$(go env GOARCH)/terraform-provider-linux_v${usage_version}"'
+
+[tasks.vet]
+description = "Run go vet"
+run = "go vet ./..."
+
+# The communicator is a nested module replaced in go.mod, so ./... does not reach its tests. Extra arguments are
+# appended, e.g. `mise run test -- -race -run TestLinuxFileRead`.
+[tasks.test]
+description = "Run the unit tests (no SSH server needed)"
+env = { TF_ACC = "", SSH_UPLOAD_TEST = "" }
+run = "go test ./... github.com/hashicorp/terraform/communicator/..."
+
+[tasks.ssh-key]
+description = "Generate the throwaway SSH key pair of the acceptance tests, unless it already exists"
+run = '''
+if [ ! -f build/ssh/id_ed25519 ] || [ ! -f build/ssh/id_ed25519.pub ]; then
+  mkdir -p build/ssh
+  rm -f build/ssh/id_ed25519 build/ssh/id_ed25519.pub
+  ssh-keygen -q -t ed25519 -N "" -C terraform-provider-linux-tests -f build/ssh/id_ed25519
+fi
+'''
+
+[tasks.ssh-up]
+description = "Build and start the disposable SSH server for the acceptance tests"
+depends = ["ssh-key"]
+run = "docker compose -f build/docker/compose.yaml up --build --detach --wait"
+
+[tasks.ssh-down]
+description = "Stop and remove the acceptance test SSH server"
+run = "docker compose -f build/docker/compose.yaml down --volumes"
+
+# The SDK's acceptance test framework drives a Terraform-compatible CLI. It is pointed at OpenTofu, installed on demand
+# at the pinned version, and fetches the `null` provider the tests use from the OpenTofu registry.
+[tasks.testacc]
+description = "Run the acceptance tests against the local SSH server, using OpenTofu (starts the server if needed)"
+depends = ["ssh-up"]
+tools = { opentofu = "1.13.9" }
+env = { TF_ACC = "1", TF_ACC_PROVIDER_HOST = "registry.opentofu.org" }
+run = 'TF_ACC_TERRAFORM_PATH="$(command -v tofu)" go test ./... -timeout 120m'
+
+# tfplugindocs only knows how to drive a Terraform CLI to read the provider schema, so this task installs Terraform at
+# the pinned version. The generator itself is pinned in tools/go.mod, a separate module, so that its dependencies do not
+# change the ones of the provider.
+[tasks.docs]
+description = "Generate the provider documentation in docs/ from the schema, templates and examples, then validate it"
+tools = { terraform = "1.17.2" }
+run = [
+  "go tool -modfile=tools/go.mod tfplugindocs generate --provider-name linux --rendered-provider-name Linux",
+  "go tool -modfile=tools/go.mod tfplugindocs validate --provider-name linux",
+]

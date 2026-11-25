@@ -15,8 +15,6 @@ builds:
       - -trimpath
     ldflags:
       - -s -w
-      - -X main.version={{ .Version }}
-      - -X main.commit={{ .Commit }}
     goos:
       - linux
       - windows
@@ -51,14 +49,16 @@ signs:
       - --batch
       - --pinentry-mode
       - loopback
+      - --passphrase-fd
+      - '0'
       - --local-user
       - '{{ .Env.GPG_FINGERPRINT }}'
-      - --passphrase
-      - '{{ .Env.GPG_PASSPHRASE }}'
       - --output
       - '${signature}'
       - --detach-sign
       - '${artifact}'
+    # The passphrase is read from stdin instead of the arguments, so it never shows up in the process list or in logs.
+    stdin: '{{ .Env.GPG_PASSPHRASE }}'
 
 release:
   draft: false

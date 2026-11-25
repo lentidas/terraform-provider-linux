@@ -1,0 +1,25 @@
+---
+page_title: "{{ .RenderedProviderName }} Provider"
+description: |-
+  Manages Linux hosts over SSH.
+---
+
+# {{ .RenderedProviderName }} Provider
+
+Manages Linux hosts over SSH: files, directories and arbitrary resources described by commands, with the update lifecycle of Terraform and OpenTofu.
+
+## Example Usage
+
+{{ tffile .ExampleFile }}
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Lazy SSH Connection Setup
+
+The SSH connection is only made when a resource or data source of this provider is created, read, updated or deleted. The arguments of the provider can therefore be values that are only known after apply.
+
+## Provider Override
+
+Resources and data sources also accept the connection settings directly, in a `provider_override` block, as a workaround for dynamic providers. The block takes the same arguments as the provider plus an `id`, which is used for connection pooling and locking.
+
+{{ tffile "examples/provider/provider_override.tf" }}

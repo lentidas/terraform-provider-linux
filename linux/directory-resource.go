@@ -24,30 +24,37 @@ const (
 
 var schemaDirectoryResource = map[string]*schema.Schema{
 	attrDirectoryProviderOverride: {
-		Type:     schema.TypeList,
-		Optional: true,
-		MaxItems: 1,
+		Description: descProviderOverride,
+		Type:        schema.TypeList,
+		Optional:    true,
+		MaxItems:    1,
 		Elem: &schema.Resource{
 			Schema: subSchemaProviderOverride,
 		},
 	},
 
 	attrDirectoryPath: {
+		Description: "Absolute path of the directory. The parent directory is created as needed. Changing it moves the " +
+			"contents of the current directory to the new one, except hidden entries (names starting with a dot), " +
+			"which are lost.",
 		Type:     schema.TypeString,
 		Required: true,
 	},
 
 	attrDirectoryOwner: {
-		Type:     schema.TypeInt,
-		Optional: true,
-		Default:  0,
+		Description: "ID of the user that owns the directory. Defaults to `0`.",
+		Type:        schema.TypeInt,
+		Optional:    true,
+		Default:     0,
 	},
 	attrDirectoryGroup: {
-		Type:     schema.TypeInt,
-		Optional: true,
-		Default:  0,
+		Description: "ID of the group that owns the directory. Defaults to `0`.",
+		Type:        schema.TypeInt,
+		Optional:    true,
+		Default:     0,
 	},
 	attrDirectoryMode: {
+		Description:  "Directory mode as octal digits, for example `755`. Defaults to `755`.",
 		Type:         schema.TypeString,
 		Optional:     true,
 		Default:      "755",
@@ -57,13 +64,13 @@ var schemaDirectoryResource = map[string]*schema.Schema{
 		Type:        schema.TypeBool,
 		Optional:    true,
 		Default:     false,
-		Description: "If true, existing directory on remote will be replaced on create or update. This doesn't affect the content of the directory.",
+		Description: "If `true`, an existing directory on the remote is reused on create or update, and its owner and mode are set, instead of being an error. Its contents are never touched. Defaults to `false`.",
 	},
 	attrDirectoryRecyclePath: {
 		Type:        schema.TypeString,
 		Optional:    true,
 		Default:     "",
-		Description: "Path to parent directory of a generated-unix-timestamp directory where the directory will be placed on destroy",
+		Description: "Absolute path of a directory in which a directory named after the current unix timestamp is created to hold the directory when it is destroyed. When empty, the directory is deleted. Defaults to an empty string.",
 	},
 }
 
@@ -146,14 +153,18 @@ func (h handlerDirectoryResource) Read(ctx context.Context, rd *schema.ResourceD
 	}
 
 	d, err := l.readDirectory(ctx, cast.ToString(rd.Get(attrDirectoryPath)))
-	if err != nil && !errors.Is(err, errPathNotExist) {
+	if errors.Is(err, errPathNotExist) {
+		rd.SetId("")
+		return
+	}
+	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	d.overwrite = cast.ToBool(rd.Get(attrDirectoryOverwrite))
 	d.recyclePath = cast.ToString(rd.Get(attrDirectoryRecyclePath))
 	if err = h.updateResourceData(d, rd); err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 	return
 }
@@ -209,6 +220,7 @@ func (h handlerDirectoryResource) Delete(ctx context.Context, rd *schema.Resourc
 func directoryResource() *schema.Resource {
 	var hdr handlerDirectoryResource
 	return &schema.Resource{
+		Description:   "Manages a directory on a Linux host over SSH, with support for the Terraform update lifecycle.",
 		Schema:        schemaDirectoryResource,
 		CreateContext: hdr.Create,
 		ReadContext:   hdr.Read,

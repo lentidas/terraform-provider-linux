@@ -1,0 +1,38 @@
+---
+name: "docs"
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v6.0.2
+
+    - name: Set up mise
+      uses: jdx/mise-action@v5.3.0
+
+    - name: Generate and validate the documentation
+      run: mise run docs
+
+    # The registry reads the documentation from the repository at the release tag, so stale pages would be published.
+    # git status also reports pages that were deleted or created by the generation, which git diff alone would miss.
+    - name: Check for uncommitted documentation changes
+      run: |
+        if [ -n "$(git status --porcelain -- docs)" ]; then
+          git status --short -- docs
+          git diff --compact-summary -- docs
+          echo "::error::The documentation is out of date. Run 'mise run docs' and commit the result."
+          exit 1
+        fi

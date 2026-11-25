@@ -1,0 +1,52 @@
+---
+name: "goreleaser"
+
+on:
+  push:
+    tags:
+    - 'v*'
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Generate authentication token from GitHub App
+      id: app-token
+      uses: actions/create-github-app-token@v3.2.0
+      with:
+        app-id: ${{ secrets.REPOSITORY_BOT_APP_ID }}
+        private-key: ${{ secrets.REPOSITORY_BOT_PRIVATE_KEY }}
+        owner: ${{ github.repository_owner }}
+        permission-contents: write
+
+    - name: Check out repository
+      uses: actions/checkout@v6.0.2
+      with:
+        token: ${{ steps.app-token.outputs.token }}
+        fetch-depth: 0
+        persist-credentials: false
+
+    - name: Set up mise
+      uses: jdx/mise-action@v5.3.0
+
+    # A tag can be pushed independently of the go-tests workflow, so never publish a commit whose tests were not run.
+    - name: Run Go tests
+      run: mise run test
+
+    # Terraform and OpenTofu registries require the checksum file to carry a detached GPG signature.
+    - name: Import GPG key
+      env:
+        GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      run: echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+
+    - name: Run GoReleaser
+      uses: goreleaser/goreleaser-action@v7.2.2
+      with:
+        distribution: goreleaser
+        version: "~> v2"
+        args: release --clean
+      env:
+        GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }}

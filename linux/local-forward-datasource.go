@@ -21,27 +21,28 @@ const (
 
 var schemaLocalForwardDataSource = map[string]*schema.Schema{
 	attrLocalForwardProviderOverride: {
-		Type:     schema.TypeList,
-		Optional: true,
-		MaxItems: 1,
+		Description: descProviderOverride,
+		Type:        schema.TypeList,
+		Optional:    true,
+		MaxItems:    1,
 		Elem: &schema.Resource{
 			Schema: subSchemaProviderOverride,
 		},
 	},
 
 	attrLocalForwardRHost: {
-		Description: "The remote host",
+		Description: "Host that the SSH server forwards connections to, resolved from the SSH server.",
 		Type:        schema.TypeString,
 		Required:    true,
 	},
 	attrLocalForwardRPort: {
-		Description: "The remote port",
+		Description: "Port that the SSH server forwards connections to.",
 		Type:        schema.TypeInt,
 		Required:    true,
 	},
 
 	attrLocalForwardLHost: {
-		Description: "The local host",
+		Description: "Local address to listen on. The default, `0.0.0.0`, accepts connections on every network interface.",
 		Type:        schema.TypeString,
 		Optional:    true,
 		Default:     "0.0.0.0",
@@ -49,18 +50,18 @@ var schemaLocalForwardDataSource = map[string]*schema.Schema{
 	attrLocalForwardLPort: {
 		Type:        schema.TypeInt,
 		Optional:    true,
-		Description: "The local port",
+		Description: "Local port to listen on. The default, `0`, picks a random free port.",
 		Default:     0,
 	},
 
 	attrLocalForwardHost: {
 		Type:        schema.TypeString,
-		Description: "The local host",
+		Description: "Local address that is listening for connections. It equals `local_host`.",
 		Computed:    true,
 	},
 	attrLocalForwardPort: {
 		Type:        schema.TypeInt,
-		Description: "The local port",
+		Description: "Local port that is listening for connections. It equals `local_port`, or the port that was picked when `local_port` is `0`.",
 		Computed:    true,
 	},
 }
@@ -100,6 +101,7 @@ func (h handlerLocalForwardDataSource) Read(ctx context.Context, rd *schema.Reso
 func localforwardDataSource() *schema.Resource {
 	h := handlerLocalForwardDataSource{}
 	return &schema.Resource{
+		Description: "Establishes SSH local port forwarding through the connection of the provider.",
 		Schema:      schemaLocalForwardDataSource,
 		ReadContext: h.Read,
 	}

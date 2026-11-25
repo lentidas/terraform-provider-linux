@@ -26,37 +26,43 @@ const (
 
 var schemaFileResource = map[string]*schema.Schema{
 	attrFileProviderOverride: {
-		Type:     schema.TypeList,
-		Optional: true,
-		MaxItems: 1,
+		Description: descProviderOverride,
+		Type:        schema.TypeList,
+		Optional:    true,
+		MaxItems:    1,
 		Elem: &schema.Resource{
 			Schema: subSchemaProviderOverride,
 		},
 	},
 
 	attrFilePath: {
-		Type:     schema.TypeString,
-		Required: true,
+		Description: "Absolute path of the file. The parent directory is created as needed.",
+		Type:        schema.TypeString,
+		Required:    true,
 	},
 	attrFileContent: {
-		Type:     schema.TypeString,
-		Optional: true,
-		Default:  "",
+		Description: "Content of the file. Defaults to an empty string.",
+		Type:        schema.TypeString,
+		Optional:    true,
+		Default:     "",
 		DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 			return cast.ToBool(d.Get(attrFileIgnoreContent))
 		},
 	},
 	attrFileOwner: {
-		Type:     schema.TypeInt,
-		Optional: true,
-		Default:  0,
+		Description: "ID of the user that owns the file. Defaults to `0`.",
+		Type:        schema.TypeInt,
+		Optional:    true,
+		Default:     0,
 	},
 	attrFileGroup: {
-		Type:     schema.TypeInt,
-		Optional: true,
-		Default:  0,
+		Description: "ID of the group that owns the file. Defaults to `0`.",
+		Type:        schema.TypeInt,
+		Optional:    true,
+		Default:     0,
 	},
 	attrFileMode: {
+		Description:  "File mode as octal digits, for example `644`. Defaults to `644`.",
 		Type:         schema.TypeString,
 		Optional:     true,
 		Default:      "644",
@@ -66,19 +72,19 @@ var schemaFileResource = map[string]*schema.Schema{
 		Type:        schema.TypeBool,
 		Optional:    true,
 		Default:     false,
-		Description: "If true, `content` will be ignored and won't be included in schema diff",
+		Description: "If `true`, `content` is ignored and left out of the diff, so changes to it do not rewrite the file. Defaults to `false`.",
 	},
 	attrFileOverwrite: {
 		Type:        schema.TypeBool,
 		Optional:    true,
 		Default:     false,
-		Description: "If true, existing file on remote will be replaced on create or update",
+		Description: "If `true`, an existing file on the remote is replaced on create or update. Otherwise it is an error. Defaults to `false`.",
 	},
 	attrFileRecyclePath: {
 		Type:        schema.TypeString,
 		Optional:    true,
 		Default:     "",
-		Description: "Path to parent directory of a generated-unix-timestamp directory where the file will be placed on destroy",
+		Description: "Absolute path of a directory in which a directory named after the current unix timestamp is created to hold the file when it is destroyed. When empty, the file is deleted. Defaults to an empty string.",
 	},
 }
 
@@ -178,14 +184,18 @@ func (h handlerFileResource) Read(ctx context.Context, rd *schema.ResourceData, 
 		return diag.FromErr(err)
 	}
 	f, err := l.readFile(ctx, cast.ToString(rd.Get(attrFilePath)), cast.ToBool(rd.Get(attrFileIgnoreContent)))
-	if err != nil && !errors.Is(err, errPathNotExist) {
+	if errors.Is(err, errPathNotExist) {
+		rd.SetId("")
+		return
+	}
+	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	f.overwrite = cast.ToBool(rd.Get(attrFileOverwrite))
 	f.recyclePath = cast.ToString(rd.Get(attrFileRecyclePath))
 	if err = h.updateResourceData(f, rd); err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 	return
 }
@@ -240,6 +250,7 @@ func (h handlerFileResource) Delete(ctx context.Context, rd *schema.ResourceData
 func fileResource() *schema.Resource {
 	var hfr handlerFileResource
 	return &schema.Resource{
+		Description:   "Manages a file on a Linux host over SSH, with support for the Terraform update lifecycle.",
 		Schema:        schemaFileResource,
 		CreateContext: hfr.Create,
 		ReadContext:   hfr.Read,

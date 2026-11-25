@@ -1,6 +1,6 @@
 module github.com/TelkomIndonesia/terraform-provider-linux
 
-go 1.24.0
+go 1.27.4
 
 require (
 	al.essio.dev/pkg/shellescape v1.6.0
@@ -14,6 +14,7 @@ require (
 	github.com/spf13/cast v1.10.0
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.27.0
+	golang.org/x/crypto v0.42.0
 	golang.org/x/net v0.44.0
 )
 
@@ -64,7 +65,6 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/zclconf/go-cty v1.17.0 // indirect
-	golang.org/x/crypto v0.42.0 // indirect
 	golang.org/x/mod v0.27.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect

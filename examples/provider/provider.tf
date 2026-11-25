@@ -1,0 +1,6 @@
+provider "linux" {
+  host     = "127.0.0.1"
+  port     = 22
+  user     = "root"
+  password = "root"
+}
