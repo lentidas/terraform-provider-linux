@@ -13,7 +13,15 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    uses: ./.github/workflows/changes.yaml
+    permissions:
+      contents: read
+      pull-requests: read
+
   goreleaser-check:
+    needs: changes
+    if: ${{ needs.changes.outputs.release == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
