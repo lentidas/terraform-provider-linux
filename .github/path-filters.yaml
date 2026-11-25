@@ -1,0 +1,33 @@
+# Which files each CI workflow depends on, read by the `changes-filter` workflow. A workflow whose filter matches nothing
+# in a pull request or push has its jobs skipped, and a skipped job still satisfies the required status checks of the `main`
+# ruleset. Keep these in sync when adding a file that a workflow reads.
+
+# Everything that changes the compiled provider or how the tooling builds it.
+common: &common
+- '**/*.go'
+- go.mod
+- go.sum
+- internal/**
+- mise.toml
+- .github/path-filters.yaml
+- .github/workflows/changes-filter.yaml
+
+tests:
+- *common
+- build/docker/**
+- .github/workflows/tests.yaml
+
+# The reference pages are generated from the Go schema, so code changes can make them stale.
+docs:
+- *common
+- docs/**
+- templates/**
+- examples/**
+- tools/**
+- .github/workflows/docs.yaml
+
+release:
+- *common
+- .goreleaser.yml
+- .github/workflows/goreleaser.yaml
+- .github/workflows/goreleaser-check.yaml
