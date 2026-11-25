@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.1](https://github.com/lentidas/terraform-provider-linux/compare/v0.9.0...v0.9.1) (2026-11-25)
+
+
+### Code Refactoring
+
+* renames the Go module to the fork's repository path ([961aab8](https://github.com/lentidas/terraform-provider-linux/commit/961aab80341429d558c0ab9c0ed181599e4607ca))
+* renames the Go module to the fork's repository path ([#6](https://github.com/lentidas/terraform-provider-linux/issues/6)) ([35b212e](https://github.com/lentidas/terraform-provider-linux/commit/35b212e85f5c64b8c917290e653567f13d9d36b6))
+
 ## [0.9.0](https://github.com/lentidas/terraform-provider-linux/compare/v0.8.0...v0.9.0) (2026-11-25)
 
 
