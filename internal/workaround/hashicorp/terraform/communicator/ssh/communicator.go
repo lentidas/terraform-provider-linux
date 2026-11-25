@@ -401,8 +401,9 @@ func (c *Communicator) Upload(path string, input io.Reader) error {
 	case *os.File:
 		fi, err := src.Stat()
 		if err != nil {
-			size = fi.Size()
+			return err
 		}
+		size = fi.Size()
 	case *bytes.Buffer:
 		size = int64(src.Len())
 	case *bytes.Reader:
@@ -415,8 +416,20 @@ func (c *Communicator) Upload(path string, input io.Reader) error {
 		return scpUploadFile(targetFile, input, w, stdoutR, size)
 	}
 
-	return c.scpSession("scp -vt "+targetDir, scpFunc)
+	return c.scpSession(scpSinkCommand(targetDir), scpFunc)
 }
+
+// scpSinkCommand is run by the remote shell, so the directory must not be interpreted by it.
+func scpSinkCommand(dir string) string {
+	return "scp -vt " + shellQuote(dir)
+}
+
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+}
+
+// scriptMode keeps an uploaded script private to the connecting user, who is also the one that runs it.
+const scriptMode = "0700"
 
 // UploadScript implementation of communicator.Communicator interface
 func (c *Communicator) UploadScript(path string, input io.Reader) error {
@@ -438,20 +451,20 @@ func (c *Communicator) UploadScript(path string, input io.Reader) error {
 
 	var stdout, stderr bytes.Buffer
 	cmd := &remote.Cmd{
-		Command: fmt.Sprintf("chmod 0777 %s", path),
+		Command: fmt.Sprintf("chmod %s %s", scriptMode, path),
 		Stdout:  &stdout,
 		Stderr:  &stderr,
 	}
 	if err := c.Start(cmd); err != nil {
 		return fmt.Errorf(
-			"Error chmodding script file to 0777 in remote "+
-				"machine: %s", err)
+			"Error chmodding script file to %s in remote "+
+				"machine: %s", scriptMode, err)
 	}
 
 	if err := cmd.Wait(); err != nil {
 		return fmt.Errorf(
-			"Error chmodding script file to 0777 in remote "+
-				"machine %v: %s %s", err, stdout.String(), stderr.String())
+			"Error chmodding script file to %s in remote "+
+				"machine %v: %s %s", scriptMode, err, stdout.String(), stderr.String())
 	}
 
 	return nil
@@ -653,7 +666,8 @@ func scpUploadFile(dst string, src io.Reader, w io.Writer, r *bufio.Reader, size
 
 	// Start the protocol
 	log.Println("[DEBUG] Beginning file upload...")
-	fmt.Fprintln(w, "C0644", size, dst)
+	// Always private at creation; callers apply the final owner and mode afterwards.
+	fmt.Fprintln(w, "C0600", size, dst)
 	if err := checkSCPStatus(r); err != nil {
 		return err
 	}

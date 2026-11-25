@@ -92,8 +92,9 @@ var schemaScriptResource = map[string]*schema.Schema{
 	attrScriptInterpreter: {
 		Description: "Interpreter used to run each lifecycle command, as a program followed by its arguments. The path of " +
 			"the uploaded script is appended as the last argument. When empty, the script is executed directly, " +
-			"using its `#!` line or `/bin/sh`. Changing it follows the rules described in [Updating the " +
-			"instructions](#updating-the-instructions).",
+			"using its `#!` line or `/bin/sh`. The script is uploaded readable by the connecting user only, so an " +
+			"interpreter that switches user, such as `sudo -u`, cannot read it. Changing it follows the rules " +
+			"described in [Updating the instructions](#updating-the-instructions).",
 		Type:     schema.TypeList,
 		Optional: true,
 		Elem: &schema.Schema{
