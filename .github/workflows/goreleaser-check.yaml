@@ -1,0 +1,53 @@
+---
+name: "goreleaser-check"
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+permissions:
+  contents: read
+
+jobs:
+  goreleaser-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v6.0.2
+      with:
+        fetch-depth: 0
+
+    - name: Set up mise
+      uses: jdx/mise-action@v5.3.0
+
+    # A release cannot be repeated or retracted, so the signing configuration is exercised here, on every change, with a
+    # key that exists only for this run and the same way the release workflow passes its secrets.
+    - name: Create a throwaway signing key
+      run: |
+        export GNUPGHOME="$RUNNER_TEMP/gnupg"
+        mkdir -m 700 "$GNUPGHOME"
+        passphrase="$(openssl rand -hex 16)"
+        echo "::add-mask::$passphrase"
+        gpg --batch --pinentry-mode loopback --passphrase "$passphrase" \
+          --quick-generate-key "CI Test <ci-test@example.invalid>" ed25519 sign 1d
+        fingerprint="$(gpg --list-keys --with-colons | awk -F: '/^fpr/ { print $10; exit }')"
+        {
+          echo "GNUPGHOME=$GNUPGHOME"
+          echo "GPG_FINGERPRINT=$fingerprint"
+          echo "GPG_PASSPHRASE=$passphrase"
+        } >> "$GITHUB_ENV"
+
+    - name: Build and sign a snapshot release
+      uses: goreleaser/goreleaser-action@v7.2.2
+      with:
+        distribution: goreleaser
+        version: "~> v2"
+        args: release --snapshot --clean
+
+    - name: Verify the signature of the checksum file
+      run: gpg --verify dist/*_SHA256SUMS.sig dist/*_SHA256SUMS
