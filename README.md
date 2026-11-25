@@ -2,9 +2,9 @@ Terraform Provider Linux
 ========================
 
 [![Release](https://img.shields.io/github/v/release/lentidas/terraform-provider-linux)](https://github.com/lentidas/terraform-provider-linux/releases) [![Tests](https://img.shields.io/github/actions/workflow/status/lentidas/terraform-provider-linux/tests.yaml?label=tests)](https://github.com/lentidas/terraform-provider-linux/actions/workflows/tests.yaml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/TelkomIndonesia/terraform-provider-linux)](https://goreportcard.com/report/github.com/TelkomIndonesia/terraform-provider-linux)
+[![Go Report Card](https://goreportcard.com/badge/github.com/lentidas/terraform-provider-linux)](https://goreportcard.com/report/github.com/lentidas/terraform-provider-linux)
 
-- Website: <https://registry.terraform.io/namespaces/TelkomIndonesia>
+- Website: <https://github.com/lentidas/terraform-provider-linux>
 
 Requirements
 ------------
