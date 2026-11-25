@@ -1,4 +1,4 @@
-module github.com/TelkomIndonesia/terraform-provider-linux/tools
+module github.com/lentidas/terraform-provider-linux/tools
 
 go 1.25.8
 

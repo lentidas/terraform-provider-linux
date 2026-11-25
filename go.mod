@@ -1,4 +1,4 @@
-module github.com/TelkomIndonesia/terraform-provider-linux
+module github.com/lentidas/terraform-provider-linux
 
 go 1.27.4
 
