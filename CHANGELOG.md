@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.9.0](https://github.com/lentidas/terraform-provider-linux/compare/v0.8.0...v0.9.0) (2026-11-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* hardens authentication, uploads and secret handling
+* a script is readable only by the user that connects, so an interpreter that switches user, such as `sudo -u` or `su`, can no longer read it. Uploaded files are no longer world-readable while they are being transferred.
+* a mode that is not three or four octal digits, and an owner or group outside 0 to 4294967294, are now rejected at validation. A resource that relied on an ID above 65535 wrapping around will plan a change to the real ID.
+
+### Bug Fixes
+
+* hardens authentication, uploads and secret handling ([d90b953](https://github.com/lentidas/terraform-provider-linux/commit/d90b95372cd283bc276259f8a8c3ebd229c46a2f))
+* keeps key material out of certificate authentication errors ([7011200](https://github.com/lentidas/terraform-provider-linux/commit/70112003b21bd47c9adb1adce820c040689b33d9))
+* keeps sensitive environment values out of logs and errors ([612b401](https://github.com/lentidas/terraform-provider-linux/commit/612b401ab7b1281653e299739d3090c211b193af))
+* stages uploads privately and quotes the SCP target ([9c2c190](https://github.com/lentidas/terraform-provider-linux/commit/9c2c190615a326c93405cf930d8efd06cee115d4))
+* validates owner, group and mode and supports 32-bit IDs ([098457b](https://github.com/lentidas/terraform-provider-linux/commit/098457b5c7cc7bdbc740298c096d0ea24e626554))
+* verifies the bastion against its own host key ([510b259](https://github.com/lentidas/terraform-provider-linux/commit/510b259793afa8f0c2f2865a0add35114a361222))
+
+
+### Documentation
+
+* generate documentation ([555f483](https://github.com/lentidas/terraform-provider-linux/commit/555f4831ec40214f2dc6ec52cb67c9c101bf4a50))
+
+
+### Miscellaneous Chores
+
+* merge pull request [#4](https://github.com/lentidas/terraform-provider-linux/issues/4) from lentidas/fix/agent-reviewer-issues-fixes ([d90b953](https://github.com/lentidas/terraform-provider-linux/commit/d90b95372cd283bc276259f8a8c3ebd229c46a2f))
+
+
+### Tests
+
+* keeps acceptance tests away from hosts they were not pointed at ([cc1c582](https://github.com/lentidas/terraform-provider-linux/commit/cc1c5825e2758101c24d577e5f71d5405dd8561d))
+
+
+### Continuous Integration
+
+* replaces deprecated parameter with new one ([8bb61b0](https://github.com/lentidas/terraform-provider-linux/commit/8bb61b06a852fa0b3ab931d73f55f7772306ca60))
+* runs the unit tests without the race detector as well ([3d43127](https://github.com/lentidas/terraform-provider-linux/commit/3d43127396705fa1a194f8f5d4266b066b4b802c))
+
 ## [0.8.0](https://github.com/lentidas/terraform-provider-linux/compare/v0.7.1...v0.8.0) (2026-11-25)
 
 
