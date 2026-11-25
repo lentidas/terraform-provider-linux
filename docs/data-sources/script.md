@@ -34,9 +34,9 @@ data "linux_script" "package_version" {
 ### Optional
 
 - `environment` (Map of String) Environment variables available to each lifecycle command.
-- `interpreter` (List of String) Interpreter used to run the `read` commands, as a program followed by its arguments. The path of the uploaded script is appended as the last argument. When empty, the script is executed directly, using its `#!` line or `/bin/sh`.
+- `interpreter` (List of String) Interpreter used to run the `read` commands, as a program followed by its arguments. The path of the uploaded script is appended as the last argument. When empty, the script is executed directly, using its `#!` line or `/bin/sh`. The script is uploaded readable by the connecting user only, so an interpreter that switches user, such as `sudo -u`, cannot read it.
 - `provider_override` (Block List, Max: 1) SSH connection settings used by this object instead of the provider configuration, as a workaround for dynamic providers. It accepts the same arguments as the provider plus an `id`, which identifies the connection in the connection pool and for locking. (see [below for nested schema](#nestedblock--provider_override))
-- `sensitive_environment` (Map of String, Sensitive) Like `environment`, but marked sensitive so Terraform hides the values in its output. On a duplicate name, the value defined here wins. The values are part of the command line sent to the host, so they can still appear in debug logs (`TF_LOG=debug`).
+- `sensitive_environment` (Map of String, Sensitive) Like `environment`, but marked sensitive so Terraform hides the values in its output. On a duplicate name, the value defined here wins. The provider keeps the values out of its own logs, error messages and the internal `__faulty_output__` and `__dirty_output__` attributes; the map itself is stored in state, marked sensitive. They are still part of the command line executed on the host, where other local users can see them in the process list while a lifecycle command runs, and a command that prints them can expose them in `output`.
 - `working_directory` (String) Directory in which each lifecycle command runs. It is created if it does not exist. Defaults to `.`.
 
 ### Read-Only
@@ -65,7 +65,7 @@ Optional:
 - `agent_identity` (String) The preferred identity from the ssh agent for authentication.
 - `bastion_certificate` (String) The contents of a signed CA Certificate. The certificate argument must be used in conjunction with a `bastion_private_key`. These can be loaded from a file on disk using the the `file` function.
 - `bastion_host` (String) Setting this enables the bastion Host connection. This host will be connected to first, and then the `host` connection will be made from there.
-- `bastion_host_key` (String) The public key from the remote host or the signing CA, used to verify the host connection.
+- `bastion_host_key` (String) The public key from the remote host or the signing CA, used to verify the host connection. Defaults to the value of the `host_key` field.
 - `bastion_password` (String, Sensitive) The password we should use for the bastion host. Defaults to the value of the `password` field.
 - `bastion_port` (Number) The port to use connect to the bastion host. Defaults to the value of the `port` field.
 - `bastion_private_key` (String, Sensitive) The contents of an SSH key file to use for the bastion host. These can be loaded from a file on disk using the `file` function. Defaults to the value of the `private_key` field.

@@ -579,12 +579,20 @@ func TestCertificateBasedAuth(t *testing.T) {
 	}
 }
 
+// These tests write to the real SSH server of the machine running them (127.0.0.1:22, as $USER), so a stray
+// SSH_UPLOAD_TEST=1 must not enable them.
+const uploadTestOptIn = "local-sshd"
+
+func skipUnlessUploadTestOptIn(t *testing.T) {
+	t.Helper()
+	if os.Getenv("SSH_UPLOAD_TEST") != uploadTestOptIn {
+		t.Skipf("uploads through this machine's own sshd; set SSH_UPLOAD_TEST=%s to run", uploadTestOptIn)
+	}
+}
+
 func TestAccUploadFile(t *testing.T) {
 	// use the local ssh server and scp binary to check uploads
-	if ok := os.Getenv("SSH_UPLOAD_TEST"); ok == "" {
-		t.Log("Skipping Upload Acceptance without SSH_UPLOAD_TEST set")
-		t.Skip()
-	}
+	skipUnlessUploadTestOptIn(t)
 
 	r := &terraform.InstanceState{
 		Ephemeral: terraform.EphemeralState{
@@ -629,10 +637,7 @@ func TestAccUploadFile(t *testing.T) {
 
 func TestAccHugeUploadFile(t *testing.T) {
 	// use the local ssh server and scp binary to check uploads
-	if ok := os.Getenv("SSH_UPLOAD_TEST"); ok == "" {
-		t.Log("Skipping Upload Acceptance without SSH_UPLOAD_TEST set")
-		t.Skip()
-	}
+	skipUnlessUploadTestOptIn(t)
 
 	r := &terraform.InstanceState{
 		Ephemeral: terraform.EphemeralState{
@@ -674,7 +679,7 @@ func TestAccHugeUploadFile(t *testing.T) {
 		return scpUploadFile(targetFile, source, w, stdoutR, size)
 	}
 
-	err = c.scpSession("scp -vt "+targetDir, scpFunc)
+	err = c.scpSession(scpSinkCommand(targetDir), scpFunc)
 	if err != nil {
 		t.Fatal(err)
 	}

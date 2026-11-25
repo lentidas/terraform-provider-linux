@@ -32,7 +32,8 @@ var schemaScriptDataSource = func() (m map[string]*schema.Schema) {
 			*m[k] = *v
 			m[k].Description = "Interpreter used to run the `read` commands, as a program followed by its arguments. The " +
 				"path of the uploaded script is appended as the last argument. When empty, the script is executed " +
-				"directly, using its `#!` line or `/bin/sh`."
+				"directly, using its `#!` line or `/bin/sh`. The script is uploaded readable by the connecting user " +
+				"only, so an interpreter that switches user, such as `sudo -u`, cannot read it."
 
 		case attrScriptTriggers:
 		case attrScriptDirtyOutput:

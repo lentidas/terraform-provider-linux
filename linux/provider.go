@@ -109,7 +109,7 @@ var schemaProvider = map[string]*schema.Schema{
 	attrProviderBastionHostKey: {
 		Type:        schema.TypeString,
 		Optional:    true,
-		Description: "The public key from the remote host or the signing CA, used to verify the host connection.",
+		Description: "The public key from the remote host or the signing CA, used to verify the host connection. Defaults to the value of the `host_key` field.",
 	},
 	attrProviderBastionUser: {
 		Type:        schema.TypeString,

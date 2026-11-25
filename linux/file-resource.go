@@ -3,12 +3,10 @@ package linux
 import (
 	"context"
 	"errors"
-	"regexp"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/spf13/cast"
 )
 
@@ -50,23 +48,26 @@ var schemaFileResource = map[string]*schema.Schema{
 		},
 	},
 	attrFileOwner: {
-		Description: "ID of the user that owns the file. Defaults to `0`.",
-		Type:        schema.TypeInt,
-		Optional:    true,
-		Default:     0,
+		Description:  "ID of the user that owns the file. Defaults to `0`.",
+		Type:         schema.TypeInt,
+		Optional:     true,
+		Default:      0,
+		ValidateFunc: validateID,
 	},
 	attrFileGroup: {
-		Description: "ID of the group that owns the file. Defaults to `0`.",
-		Type:        schema.TypeInt,
-		Optional:    true,
-		Default:     0,
+		Description:  "ID of the group that owns the file. Defaults to `0`.",
+		Type:         schema.TypeInt,
+		Optional:     true,
+		Default:      0,
+		ValidateFunc: validateID,
 	},
 	attrFileMode: {
-		Description:  "File mode as octal digits, for example `644`. Defaults to `644`.",
-		Type:         schema.TypeString,
-		Optional:     true,
-		Default:      "644",
-		ValidateFunc: validation.StringMatch(regexp.MustCompile("[0-7]{3}"), "Invalid linux permission"),
+		Description:      "File mode as three or four octal digits, for example `644`. Defaults to `644`.",
+		Type:             schema.TypeString,
+		Optional:         true,
+		Default:          "644",
+		ValidateFunc:     validateMode,
+		DiffSuppressFunc: suppressEquivalentMode,
 	},
 	attrFileIgnoreContent: {
 		Type:        schema.TypeBool,
@@ -98,8 +99,8 @@ func (handlerFileResource) newFile(rd *schema.ResourceData) (f *file) {
 		path:    cast.ToString(rd.Get(attrFilePath)),
 		content: cast.ToString(rd.Get(attrFileContent)),
 		permission: permission{
-			owner: cast.ToUint16(rd.Get(attrFileOwner)),
-			group: cast.ToUint16(rd.Get(attrFileGroup)),
+			owner: cast.ToUint32(rd.Get(attrFileOwner)),
+			group: cast.ToUint32(rd.Get(attrFileGroup)),
 			mode:  cast.ToString(rd.Get(attrFileMode)),
 		},
 		ignoreContent: cast.ToBool(rd.Get(attrFileIgnoreContent)),
@@ -122,10 +123,10 @@ func (handlerFileResource) newDiffedFile(rd *schema.ResourceData) (old, new *fil
 	old.content, new.content = cast.ToString(o), cast.ToString(n)
 
 	o, n = rd.GetChange(attrFileOwner)
-	old.permission.owner, new.permission.owner = cast.ToUint16(o), cast.ToUint16(n)
+	old.permission.owner, new.permission.owner = cast.ToUint32(o), cast.ToUint32(n)
 
 	o, n = rd.GetChange(attrFileGroup)
-	old.permission.group, new.permission.group = cast.ToUint16(o), cast.ToUint16(n)
+	old.permission.group, new.permission.group = cast.ToUint32(o), cast.ToUint32(n)
 
 	o, n = rd.GetChange(attrFileMode)
 	old.permission.mode, new.permission.mode = cast.ToString(o), cast.ToString(n)

@@ -13,6 +13,9 @@ type Cmd struct {
 	// necessary.
 	Command string
 
+	// Redacted, when set, replaces Command in logs and error messages. Use it when Command carries secrets.
+	Redacted string
+
 	// Stdin specifies the process's standard input. If Stdin is
 	// nil, the process reads from an empty bytes.Buffer.
 	Stdin io.Reader
@@ -71,13 +74,21 @@ func (c *Cmd) Wait() error {
 
 	if c.err != nil || c.exitStatus != 0 {
 		return &ExitError{
-			Command:    c.Command,
+			Command:    c.Loggable(),
 			ExitStatus: c.exitStatus,
 			Err:        c.err,
 		}
 	}
 
 	return nil
+}
+
+// Loggable returns the command text that is safe to write to logs and error messages.
+func (c *Cmd) Loggable() string {
+	if c.Redacted != "" {
+		return c.Redacted
+	}
+	return c.Command
 }
 
 // ExitError is returned by Wait to indicate and error executing the remote

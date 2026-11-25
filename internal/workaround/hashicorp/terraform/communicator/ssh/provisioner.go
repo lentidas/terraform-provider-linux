@@ -136,6 +136,9 @@ func parseConnectionInfo(s *terraform.InstanceState) (*connectionInfo, error) {
 		if connInfo.BastionPort == 0 {
 			connInfo.BastionPort = connInfo.Port
 		}
+		if connInfo.BastionHostKey == "" {
+			connInfo.BastionHostKey = connInfo.HostKey
+		}
 	}
 
 	return connInfo, nil
@@ -185,7 +188,7 @@ func prepareSSHConfig(connInfo *connectionInfo) (*sshConfig, error) {
 			host:        bastionHost,
 			privateKey:  connInfo.BastionPrivateKey,
 			password:    connInfo.BastionPassword,
-			hostKey:     connInfo.HostKey,
+			hostKey:     connInfo.BastionHostKey,
 			certificate: connInfo.BastionCertificate,
 			sshAgent:    sshAgent,
 		})
@@ -283,24 +286,29 @@ func buildSSHClientConfig(opts sshClientConfigOpts) (*ssh.ClientConfig, error) {
 
 // Create a Cert Signer and return ssh.AuthMethod
 func signCertWithPrivateKey(pk string, certificate string) (ssh.AuthMethod, error) {
+	// The errors never include the key material: they end up in diagnostics.
 	rawPk, err := ssh.ParseRawPrivateKey([]byte(pk))
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse private key %q: %s", pk, err)
+		return nil, fmt.Errorf("failed to parse private key: %s", err)
 	}
 
 	pcert, _, _, _, err := ssh.ParseAuthorizedKey([]byte(certificate))
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse certificate %q: %s", certificate, err)
+		return nil, fmt.Errorf("failed to parse certificate: %s", err)
+	}
+	cert, ok := pcert.(*ssh.Certificate)
+	if !ok {
+		return nil, fmt.Errorf("the certificate is a plain %s public key, not an OpenSSH certificate", pcert.Type())
 	}
 
 	usigner, err := ssh.NewSignerFromKey(rawPk)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create signer from raw private key %q: %s", rawPk, err)
+		return nil, fmt.Errorf("failed to create signer from the private key: %s", err)
 	}
 
-	ucertSigner, err := ssh.NewCertSigner(pcert.(*ssh.Certificate), usigner)
+	ucertSigner, err := ssh.NewCertSigner(cert, usigner)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create cert signer %q: %s", usigner, err)
+		return nil, fmt.Errorf("failed to create cert signer: %s", err)
 	}
 
 	return ssh.PublicKeys(ucertSigner), nil

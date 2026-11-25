@@ -36,7 +36,7 @@ resource "linux_file" "file" {
 - `content` (String) Content of the file. Defaults to an empty string.
 - `group` (Number) ID of the group that owns the file. Defaults to `0`.
 - `ignore_content` (Boolean) If `true`, `content` is ignored and left out of the diff, so changes to it do not rewrite the file. Defaults to `false`.
-- `mode` (String) File mode as octal digits, for example `644`. Defaults to `644`.
+- `mode` (String) File mode as three or four octal digits, for example `644`. Defaults to `644`.
 - `overwrite` (Boolean) If `true`, an existing file on the remote is replaced on create or update. Otherwise it is an error. Defaults to `false`.
 - `owner` (Number) ID of the user that owns the file. Defaults to `0`.
 - `provider_override` (Block List, Max: 1) SSH connection settings used by this object instead of the provider configuration, as a workaround for dynamic providers. It accepts the same arguments as the provider plus an `id`, which identifies the connection in the connection pool and for locking. (see [below for nested schema](#nestedblock--provider_override))
@@ -59,7 +59,7 @@ Optional:
 - `agent_identity` (String) The preferred identity from the ssh agent for authentication.
 - `bastion_certificate` (String) The contents of a signed CA Certificate. The certificate argument must be used in conjunction with a `bastion_private_key`. These can be loaded from a file on disk using the the `file` function.
 - `bastion_host` (String) Setting this enables the bastion Host connection. This host will be connected to first, and then the `host` connection will be made from there.
-- `bastion_host_key` (String) The public key from the remote host or the signing CA, used to verify the host connection.
+- `bastion_host_key` (String) The public key from the remote host or the signing CA, used to verify the host connection. Defaults to the value of the `host_key` field.
 - `bastion_password` (String, Sensitive) The password we should use for the bastion host. Defaults to the value of the `password` field.
 - `bastion_port` (Number) The port to use connect to the bastion host. Defaults to the value of the `port` field.
 - `bastion_private_key` (String, Sensitive) The contents of an SSH key file to use for the bastion host. These can be loaded from a file on disk using the `file` function. Defaults to the value of the `private_key` field.

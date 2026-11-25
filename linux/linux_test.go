@@ -29,9 +29,11 @@ var testAccProvider = tfmap{
 	attrProviderPassword: `"root"`,
 }
 
+// The default provider of the provider override tests. It must never be reached, because the resources under test
+// override it, so it points at a closed local port instead of a remote address.
 var testAccOverridenProvider = tfmap{
-	attrProviderHost:     `"8.8.8.8"`,
-	attrProviderPort:     `2222`,
+	attrProviderHost:     `"127.0.0.1"`,
+	attrProviderPort:     `1`,
 	attrProviderUser:     `"something"`,
 	attrProviderPassword: `"else"`,
 	attrProviderTimeout:  "1",
@@ -82,6 +84,12 @@ func testAccPreCheckConnection(t *testing.T) func() {
 }
 
 func TestMain(m *testing.M) {
+	// Without an explicit target the acceptance tests fall back to root on 127.0.0.1:22, which is a real SSH server.
+	if os.Getenv("TF_ACC") != "" && os.Getenv("TEST_ACC_LINUX_PROVIDER_HOST") == "" {
+		fmt.Fprintln(os.Stderr, "refusing to run acceptance tests: set TEST_ACC_LINUX_PROVIDER_HOST to a disposable "+
+			"SSH server, for example with `mise run testacc`")
+		os.Exit(1)
+	}
 	testAccInit()
 	resource.TestMain(m)
 }
