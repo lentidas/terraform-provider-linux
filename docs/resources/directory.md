@@ -33,7 +33,7 @@ resource "linux_directory" "directory" {
 ### Optional
 
 - `group` (Number) ID of the group that owns the directory. Defaults to `0`.
-- `mode` (String) Directory mode as octal digits, for example `755`. Defaults to `755`.
+- `mode` (String) Directory mode as three or four octal digits, for example `755`. Defaults to `755`.
 - `overwrite` (Boolean) If `true`, an existing directory on the remote is reused on create or update, and its owner and mode are set, instead of being an error. Its contents are never touched. Defaults to `false`.
 - `owner` (Number) ID of the user that owns the directory. Defaults to `0`.
 - `provider_override` (Block List, Max: 1) SSH connection settings used by this object instead of the provider configuration, as a workaround for dynamic providers. It accepts the same arguments as the provider plus an `id`, which identifies the connection in the connection pool and for locking. (see [below for nested schema](#nestedblock--provider_override))

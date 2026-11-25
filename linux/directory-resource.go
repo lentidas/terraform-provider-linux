@@ -3,12 +3,10 @@ package linux
 import (
 	"context"
 	"errors"
-	"regexp"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/spf13/cast"
 )
 
@@ -42,23 +40,26 @@ var schemaDirectoryResource = map[string]*schema.Schema{
 	},
 
 	attrDirectoryOwner: {
-		Description: "ID of the user that owns the directory. Defaults to `0`.",
-		Type:        schema.TypeInt,
-		Optional:    true,
-		Default:     0,
+		Description:  "ID of the user that owns the directory. Defaults to `0`.",
+		Type:         schema.TypeInt,
+		Optional:     true,
+		Default:      0,
+		ValidateFunc: validateID,
 	},
 	attrDirectoryGroup: {
-		Description: "ID of the group that owns the directory. Defaults to `0`.",
-		Type:        schema.TypeInt,
-		Optional:    true,
-		Default:     0,
+		Description:  "ID of the group that owns the directory. Defaults to `0`.",
+		Type:         schema.TypeInt,
+		Optional:     true,
+		Default:      0,
+		ValidateFunc: validateID,
 	},
 	attrDirectoryMode: {
-		Description:  "Directory mode as octal digits, for example `755`. Defaults to `755`.",
-		Type:         schema.TypeString,
-		Optional:     true,
-		Default:      "755",
-		ValidateFunc: validation.StringMatch(regexp.MustCompile("[0-7]{3}"), "Invalid linux permission"),
+		Description:      "Directory mode as three or four octal digits, for example `755`. Defaults to `755`.",
+		Type:             schema.TypeString,
+		Optional:         true,
+		Default:          "755",
+		ValidateFunc:     validateMode,
+		DiffSuppressFunc: suppressEquivalentMode,
 	},
 	attrDirectoryOverwrite: {
 		Type:        schema.TypeBool,
@@ -83,8 +84,8 @@ func (handlerDirectoryResource) newDirectory(rd *schema.ResourceData) (d *direct
 	d = &directory{
 		path: cast.ToString(rd.Get(attrDirectoryPath)),
 		permission: permission{
-			owner: cast.ToUint16(rd.Get(attrDirectoryOwner)),
-			group: cast.ToUint16(rd.Get(attrDirectoryGroup)),
+			owner: cast.ToUint32(rd.Get(attrDirectoryOwner)),
+			group: cast.ToUint32(rd.Get(attrDirectoryGroup)),
 			mode:  cast.ToString(rd.Get(attrDirectoryMode)),
 		},
 		overwrite:   cast.ToBool(rd.Get(attrDirectoryOverwrite)),
@@ -103,10 +104,10 @@ func (handlerDirectoryResource) newDiffedDirectory(rd *schema.ResourceData) (old
 	old.path, new.path = cast.ToString(o), cast.ToString(n)
 
 	o, n = rd.GetChange(attrDirectoryOwner)
-	old.permission.owner, new.permission.owner = cast.ToUint16(o), cast.ToUint16(n)
+	old.permission.owner, new.permission.owner = cast.ToUint32(o), cast.ToUint32(n)
 
 	o, n = rd.GetChange(attrDirectoryGroup)
-	old.permission.group, new.permission.group = cast.ToUint16(o), cast.ToUint16(n)
+	old.permission.group, new.permission.group = cast.ToUint32(o), cast.ToUint32(n)
 
 	o, n = rd.GetChange(attrDirectoryMode)
 	old.permission.mode, new.permission.mode = cast.ToString(o), cast.ToString(n)

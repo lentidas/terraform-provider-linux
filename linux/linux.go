@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,6 +15,7 @@ import (
 
 	"al.essio.dev/pkg/shellescape"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform/communicator/remote"
 	"github.com/hashicorp/terraform/communicator/ssh"
 	"github.com/hashicorp/terraform/terraform"
@@ -127,15 +129,41 @@ func (l *linux) scriptPath(ctx context.Context) string {
 }
 
 type permission struct {
-	owner uint16
-	group uint16
+	owner uint32
+	group uint32
 	mode  string
+}
+
+// Linux reserves the maximum uint32 value as the "no change" ID (-1) of chown.
+const maxLinuxID = 4294967294
+
+var modePattern = regexp.MustCompile(`^[0-7]{3,4}$`)
+
+func validateID(v interface{}, k string) (ws []string, errs []error) {
+	if id, ok := v.(int); !ok || id < 0 || int64(id) > maxLinuxID {
+		errs = append(errs, fmt.Errorf("%q must be between 0 and %d, got %v", k, int64(maxLinuxID), v))
+	}
+	return
+}
+
+func validateMode(v interface{}, k string) (ws []string, errs []error) {
+	if s, ok := v.(string); !ok || !modePattern.MatchString(s) {
+		errs = append(errs, fmt.Errorf("%q must be three or four octal digits, for example 644 or 0644", k))
+	}
+	return
+}
+
+// The remote reports modes without leading zeros, so 0644 and 644 must not be a difference.
+func suppressEquivalentMode(k, old, new string, d *schema.ResourceData) bool {
+	o, errOld := strconv.ParseUint(old, 8, 16)
+	n, errNew := strconv.ParseUint(new, 8, 16)
+	return errOld == nil && errNew == nil && o == n
 }
 
 func (l *linux) setPermission(ctx context.Context, path string, p permission) (err error) {
 	pathSafe := shellescape.Quote(path)
 	cmd := fmt.Sprintf(`{ chown %d:%d %s && chmod %s %s ;}`,
-		p.owner, p.group, pathSafe, p.mode, pathSafe)
+		p.owner, p.group, pathSafe, shellescape.Quote(p.mode), pathSafe)
 	return l.exec(ctx, &remote.Cmd{Command: cmd})
 }
 
@@ -167,20 +195,20 @@ func (l *linux) getPermission(ctx context.Context, path string) (p permission, e
 		err = fmt.Errorf("malformed output of %q: %q", cmd, out)
 		return
 	}
-	owner, err := strconv.ParseUint(parts[0], 10, 16)
+	owner, err := strconv.ParseUint(parts[0], 10, 32)
 	if err != nil {
 		err = fmt.Errorf("while parsing owner id %q: %w", parts[0], err)
 		return
 	}
-	group, err := strconv.ParseUint(parts[1], 10, 16)
+	group, err := strconv.ParseUint(parts[1], 10, 32)
 	if err != nil {
-		err = fmt.Errorf("while parsing group id %q: %w", parts[0], err)
+		err = fmt.Errorf("while parsing group id %q: %w", parts[1], err)
 		return
 	}
 	p = permission{
-		owner: uint16(owner),
-		group: uint16(group),
-		mode:  parts[2],
+		owner: uint32(owner),
+		group: uint32(group),
+		mode:  strings.Repeat("0", max(0, 3-len(parts[2]))) + parts[2], // stat drops the leading zeros of "%a"
 	}
 	return
 }

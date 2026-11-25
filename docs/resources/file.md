@@ -36,7 +36,7 @@ resource "linux_file" "file" {
 - `content` (String) Content of the file. Defaults to an empty string.
 - `group` (Number) ID of the group that owns the file. Defaults to `0`.
 - `ignore_content` (Boolean) If `true`, `content` is ignored and left out of the diff, so changes to it do not rewrite the file. Defaults to `false`.
-- `mode` (String) File mode as octal digits, for example `644`. Defaults to `644`.
+- `mode` (String) File mode as three or four octal digits, for example `644`. Defaults to `644`.
 - `overwrite` (Boolean) If `true`, an existing file on the remote is replaced on create or update. Otherwise it is an error. Defaults to `false`.
 - `owner` (Number) ID of the user that owns the file. Defaults to `0`.
 - `provider_override` (Block List, Max: 1) SSH connection settings used by this object instead of the provider configuration, as a workaround for dynamic providers. It accepts the same arguments as the provider plus an `id`, which identifies the connection in the connection pool and for locking. (see [below for nested schema](#nestedblock--provider_override))
