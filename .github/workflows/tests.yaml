@@ -49,6 +49,11 @@ jobs:
           pie
           untested
 
+    # communicator_test.go carries a `!race` build constraint, so the run above skips it. `mise run test` also keeps
+    # the acceptance tests disabled.
+    - name: Run Go tests without the race detector
+      run: mise run test
+
   # Runs the acceptance tests against a throwaway SSH server built from build/docker, never against a real host.
   acceptance-tests:
     needs: changes-filter
