@@ -1,5 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "forkProcessing": "enabled",
   "packageRules": [
     {
       "description": "Bump the go directive of go.mod along with new Go releases, which Renovate does not do by default. It is the only place the Go version is declared, since mise reads it from there.",
