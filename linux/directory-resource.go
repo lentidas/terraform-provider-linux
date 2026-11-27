@@ -71,7 +71,7 @@ var schemaDirectoryResource = map[string]*schema.Schema{
 		Type:        schema.TypeString,
 		Optional:    true,
 		Default:     "",
-		Description: "Absolute path of a directory in which a directory named after the current unix timestamp is created to hold the directory when it is destroyed. When empty, the directory is deleted. Defaults to an empty string.",
+		Description: "Absolute path of a directory in which a directory named after the current unix timestamp and a random suffix is created to hold the directory when it is destroyed. When empty, the directory is deleted. Defaults to an empty string.",
 	},
 }
 

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"al.essio.dev/pkg/shellescape"
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform/communicator/remote"
@@ -248,10 +249,13 @@ func (l *linux) remove(ctx context.Context, path, recyclePath string) (err error
 
 	var cmd string
 	if recyclePath != "" {
-		recycleFolder := fmt.Sprintf("%s/%d", recyclePath, time.Now().Unix())
-		cmd = fmt.Sprintf(`{ [ ! -e %s ] || { %s && %s ;} ;}`,
+		// The folder is created without -p, so an existing one is an error instead of a silent reuse, and the random
+		// suffix keeps removals in the same second apart.
+		recycleFolder := fmt.Sprintf("%s/%d-%s", recyclePath, time.Now().Unix(), uuid.NewString()[:8])
+		cmd = fmt.Sprintf(`{ [ ! -e %s ] || { %s && %s && %s ;} ;}`,
 			shellescape.Quote(path),
-			shellescape.QuoteCommand([]string{"mkdir", "-p", recycleFolder}),
+			shellescape.QuoteCommand([]string{"mkdir", "-p", recyclePath}),
+			shellescape.QuoteCommand([]string{"mkdir", recycleFolder}),
 			shellescape.QuoteCommand([]string{"mv", path, recycleFolder}),
 		)
 	} else {
