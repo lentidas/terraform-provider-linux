@@ -32,9 +32,12 @@ var schemaDirectoryResource = map[string]*schema.Schema{
 	},
 
 	attrDirectoryPath: {
-		Description: "Absolute path of the directory. The parent directory is created as needed. Changing it moves the " +
-			"contents of the current directory to the new one, except hidden entries (names starting with a dot), " +
-			"which are lost.",
+		Description: "Absolute path of the directory. The parent directory is created as needed. Changing it renames " +
+			"the directory, with everything in it, hidden entries included. If the new path already exists, which " +
+			"requires `overwrite`, the contents are merged into it instead: entries of the current directory replace " +
+			"entries with the same name, other entries of the new directory stay, and the current directory is " +
+			"removed only after everything was copied. A new path inside the current one, or the other way around, " +
+			"is an error.",
 		Type:     schema.TypeString,
 		Required: true,
 	},
@@ -65,7 +68,7 @@ var schemaDirectoryResource = map[string]*schema.Schema{
 		Type:        schema.TypeBool,
 		Optional:    true,
 		Default:     false,
-		Description: "If `true`, an existing directory on the remote is reused on create or update, and its owner and mode are set, instead of being an error. Its contents are never touched. Defaults to `false`.",
+		Description: "If `true`, an existing directory on the remote is reused on create or update, and its owner and mode are set, instead of being an error. On create its contents are never touched; when `path` changes to an existing directory, the contents are merged into it. Defaults to `false`.",
 	},
 	attrDirectoryRecyclePath: {
 		Type:        schema.TypeString,
@@ -197,8 +200,11 @@ func (h handlerDirectoryResource) Update(ctx context.Context, rd *schema.Resourc
 	}
 
 	old, new := h.newDiffedDirectory(rd)
-	err = l.updateDirectory(ctx, old, new)
+	moved, err := l.updateDirectory(ctx, old, new)
 	if err != nil {
+		if moved {
+			old.path = new.path // the directory already left its old path, which would orphan it in the state
+		}
 		_ = h.updateResourceData(old, rd) // WARN: see https://github.com/hashicorp/terraform-plugin-sdk/issues/476
 		return diag.FromErr(err)
 	}
