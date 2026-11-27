@@ -37,7 +37,10 @@ var schemaDirectoryResource = map[string]*schema.Schema{
 			"requires `overwrite`, the contents are merged into it instead: entries of the current directory replace " +
 			"entries with the same name, other entries of the new directory stay, and the current directory is " +
 			"removed only after everything was copied. A new path inside the current one, or the other way around, " +
-			"is an error.",
+			"is an error. When merging, a file and a directory with the same name make the merge fail and leave the " +
+			"current directory in place, ownership of the merged entries is only kept when the SSH user is root, and if " +
+			"removing the current directory fails after the copy, the contents exist in both places until the next " +
+			"apply retries.",
 		Type:     schema.TypeString,
 		Required: true,
 	},
