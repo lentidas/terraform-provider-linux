@@ -62,7 +62,7 @@ func (l *linux) updateDirectory(ctx context.Context, old, new *directory) (moved
 	if new == nil {
 		return false, l.deleteDirectory(ctx, old)
 	}
-	if old.path != new.path {
+	if path.Clean(old.path) != path.Clean(new.path) { // a trailing slash or a double one is not a move
 		if !new.overwrite {
 			if err = l.reservePath(ctx, new.path); err != nil {
 				return
@@ -85,6 +85,9 @@ func (l *linux) updateDirectory(ctx context.Context, old, new *directory) (moved
 // name, and the source is only removed after everything was copied.
 func (l *linux) moveDirectory(ctx context.Context, oldPath, newPath string) error {
 	o, n := path.Clean(oldPath), path.Clean(newPath)
+	if o == n {
+		return nil
+	}
 	if o == "/" || o == "." || n == "/" || n == "." {
 		return fmt.Errorf("refusing to move directory %q to %q", oldPath, newPath)
 	}
@@ -92,8 +95,14 @@ func (l *linux) moveDirectory(ctx context.Context, oldPath, newPath string) erro
 		return fmt.Errorf("cannot move directory %q to %q: one is inside the other", oldPath, newPath)
 	}
 
+	// The paths differ as strings, but they can still be one directory, through a symlink or a bind mount. Merging a
+	// directory into itself and then removing it would delete it, so that is checked here on the host and not left to
+	// the behavior of cp. A shell without -ef fails the test, which only means the guard does nothing there.
 	oldQ, newQ := shellescape.Quote(o), shellescape.Quote(n)
-	cmd := fmt.Sprintf(`{ if [ -e %[2]s ] || [ -L %[2]s ]; then %[3]s && %[4]s; else %[5]s && %[6]s; fi ;}`,
+	cmd := fmt.Sprintf(`{ if [ -e %[2]s ] || [ -L %[2]s ]; then `+
+		`if [ %[1]s -ef %[2]s ]; then echo 'the old and the new path are the same directory' >&2; false; `+
+		`else %[3]s && %[4]s; fi; `+
+		`else %[5]s && %[6]s; fi ;}`,
 		oldQ, newQ,
 		shellescape.QuoteCommand([]string{"cp", "-a", o + "/.", n + "/"}),
 		shellescape.QuoteCommand([]string{"rm", "-rf", o}),

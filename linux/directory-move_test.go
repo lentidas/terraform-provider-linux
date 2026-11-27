@@ -132,6 +132,29 @@ func TestMoveDirectory(t *testing.T) {
 				require.Equal(t, "i am a file", readTree(t, root)["new"])
 			})
 
+			t.Run("a path that only differs by slashes is not a move", func(t *testing.T) {
+				root := t.TempDir()
+				writeTree(t, root, map[string]string{"a/data": "precious", "a/.hidden": "h"})
+				pool := shellPool(t, shell, root)
+
+				for _, newPath := range []string{filepath.Join(root, "a"), filepath.Join(root, "a") + "//", filepath.Join(root, "x", "..", "a")} {
+					err := pool.def.moveDirectory(context.Background(), filepath.Join(root, "a")+"/", newPath)
+					require.NoError(t, err, newPath)
+				}
+				require.Equal(t, map[string]string{"a/data": "precious", "a/.hidden": "h"}, readTree(t, root))
+			})
+
+			t.Run("refuses a destination that is the source behind a symlink", func(t *testing.T) {
+				root := t.TempDir()
+				writeTree(t, root, map[string]string{"old/data": "precious"})
+				require.NoError(t, os.Symlink(filepath.Join(root, "old"), filepath.Join(root, "alias")))
+				pool := shellPool(t, shell, root)
+
+				err := pool.def.moveDirectory(context.Background(), filepath.Join(root, "old"), filepath.Join(root, "alias"))
+				require.Error(t, err)
+				require.Equal(t, map[string]string{"data": "precious"}, readTree(t, filepath.Join(root, "old")))
+			})
+
 			t.Run("refuses nested paths without running anything", func(t *testing.T) {
 				root := t.TempDir()
 				writeTree(t, root, map[string]string{"a/data": "precious"})
@@ -161,4 +184,17 @@ func TestDirectoryUpdateRecordsTheNewPathWhenALaterStepFails(t *testing.T) {
 	got, diags := res.Apply(context.Background(), state, diff, pool)
 	require.True(t, diags.HasError(), "%v", diags)
 	require.Equal(t, "/srv/b", got.Attributes["path"], "the directory was already moved")
+}
+
+func TestUpdateDirectoryIgnoresASlashOnlyPathChange(t *testing.T) {
+	pool, commands := recordingPool(t, func(string) (string, string, int) { return "", "", 0 })
+	old := &directory{path: "/srv/a/", permission: permission{mode: "755"}}
+	new := &directory{path: "/srv/a", permission: permission{mode: "755"}} // overwrite is false
+
+	moved, err := pool.def.updateDirectory(context.Background(), old, new)
+	require.NoError(t, err)
+	require.False(t, moved)
+	for _, c := range commands() {
+		require.NotRegexp(t, `\b(mv|cp|rm)\b|\[ ! -e`, c, "nothing may be moved, copied, removed or reserved")
+	}
 }
