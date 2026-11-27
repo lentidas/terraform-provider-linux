@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.2](https://github.com/lentidas/terraform-provider-linux/compare/v0.9.1...v0.9.2) (2026-11-27)
+
+
+### Miscellaneous Chores
+
+* adds flag required to onboard repository to Renovate ([35f6e0b](https://github.com/lentidas/terraform-provider-linux/commit/35f6e0b632f6870f710ad19248b94d66b9af940e))
+* adds flag required to onboard repository to Renovate ([#8](https://github.com/lentidas/terraform-provider-linux/issues/8)) ([3c262d8](https://github.com/lentidas/terraform-provider-linux/commit/3c262d82c7a74e9f414a9479b3799446de399dec))
+
 ## [0.9.1](https://github.com/lentidas/terraform-provider-linux/compare/v0.9.0...v0.9.1) (2026-11-25)
 
 
