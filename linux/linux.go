@@ -214,9 +214,15 @@ func (l *linux) getPermission(ctx context.Context, path string) (p permission, e
 	return
 }
 
+// pathFree is a shell test that succeeds when nothing exists at the path. -e follows symlinks, so a dangling one looks
+// free to it, and the provider would then write through the link or leave the link behind. -L catches it.
+func pathFree(quotedPath string) string {
+	return fmt.Sprintf("{ [ ! -e %[1]s ] && [ ! -L %[1]s ] ;}", quotedPath)
+}
+
 func (l *linux) reservePath(ctx context.Context, path string) (err error) {
 	var exitError *remote.ExitError
-	cmd := fmt.Sprintf("[ ! -e %s ]", shellescape.Quote(path))
+	cmd := pathFree(shellescape.Quote(path))
 	if err = l.exec(ctx, &remote.Cmd{Command: cmd}); errors.As(err, &exitError) {
 		return fmt.Errorf("path '%s' exist", path)
 	}
@@ -252,15 +258,15 @@ func (l *linux) remove(ctx context.Context, path, recyclePath string) (err error
 		// The folder is created without -p, so an existing one is an error instead of a silent reuse, and the random
 		// suffix keeps removals in the same second apart.
 		recycleFolder := fmt.Sprintf("%s/%d-%s", recyclePath, time.Now().Unix(), uuid.NewString()[:8])
-		cmd = fmt.Sprintf(`{ [ ! -e %s ] || { %s && %s && %s ;} ;}`,
-			shellescape.Quote(path),
+		cmd = fmt.Sprintf(`{ %s || { %s && %s && %s ;} ;}`,
+			pathFree(shellescape.Quote(path)),
 			shellescape.QuoteCommand([]string{"mkdir", "-p", recyclePath}),
 			shellescape.QuoteCommand([]string{"mkdir", recycleFolder}),
 			shellescape.QuoteCommand([]string{"mv", path, recycleFolder}),
 		)
 	} else {
-		cmd = fmt.Sprintf(`{ [ ! -e %s ] || %s ;}`,
-			shellescape.Quote(path),
+		cmd = fmt.Sprintf(`{ %s || %s ;}`,
+			pathFree(shellescape.Quote(path)),
 			shellescape.QuoteCommand([]string{"rm", "-rf", path}),
 		)
 	}
