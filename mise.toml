@@ -52,7 +52,7 @@ run = "docker compose -f build/docker/compose.yaml down --volumes"
 [tasks.testacc]
 description = "Run the acceptance tests against the local SSH server, using OpenTofu (starts the server if needed)"
 depends = ["ssh-up"]
-tools = { opentofu = "1.13.9" }
+tools = { opentofu = "1.13.10" }
 env = { TF_ACC = "1", TF_ACC_PROVIDER_HOST = "registry.opentofu.org" }
 run = 'TF_ACC_TERRAFORM_PATH="$(command -v tofu)" go test ./... -timeout 120m'
 
