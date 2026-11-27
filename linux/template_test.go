@@ -2,6 +2,7 @@ package linux
 
 import (
 	"fmt"
+	"regexp"
 	"text/template"
 
 	"github.com/MakeNowJust/heredoc"
@@ -9,6 +10,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"go.uber.org/zap/buffer"
 )
+
+// The scripts of the acceptance tests run through /bin/sh, which is dash on Debian. It rejects the bash-only `==` of
+// `[ a == b ]`, so test assertions are translated to the POSIX `=` when a template is compiled.
+var bashEqualsInTest = regexp.MustCompile(`(?m)^(\s*\[ .*?) ==(\s)`)
 
 func tCompileTemplate(tmpl string, data interface{}) (s string, err error) {
 	t, err := template.New("tf").Funcs(sprig.TxtFuncMap()).Parse(tmpl)
@@ -20,7 +25,7 @@ func tCompileTemplate(tmpl string, data interface{}) (s string, err error) {
 	if err != nil {
 		return
 	}
-	return buff.String(), nil
+	return bashEqualsInTest.ReplaceAllString(buff.String(), "$1 =$2"), nil
 }
 
 type tfmap map[string]string

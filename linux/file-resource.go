@@ -85,7 +85,7 @@ var schemaFileResource = map[string]*schema.Schema{
 		Type:        schema.TypeString,
 		Optional:    true,
 		Default:     "",
-		Description: "Absolute path of a directory in which a directory named after the current unix timestamp is created to hold the file when it is destroyed. When empty, the file is deleted. Defaults to an empty string.",
+		Description: "Absolute path of a directory in which a directory named after the current unix timestamp and a random suffix is created to hold the file when it is destroyed. When empty, the file is deleted. Defaults to an empty string.",
 	},
 }
 
@@ -227,8 +227,11 @@ func (h handlerFileResource) Update(ctx context.Context, rd *schema.ResourceData
 	}
 
 	old, new := h.newDiffedFile(rd)
-	err = l.updateFile(ctx, old, new)
+	moved, err := l.updateFile(ctx, old, new)
 	if err != nil {
+		if moved {
+			old.path = new.path // the file already left its old path, which would orphan it in the state
+		}
 		_ = h.updateResourceData(old, rd) // WARN: see https://github.com/hashicorp/terraform-plugin-sdk/issues/476
 		return diag.FromErr(err)
 	}

@@ -40,7 +40,7 @@ resource "linux_file" "file" {
 - `overwrite` (Boolean) If `true`, an existing file on the remote is replaced on create or update. Otherwise it is an error. Defaults to `false`.
 - `owner` (Number) ID of the user that owns the file. Defaults to `0`.
 - `provider_override` (Block List, Max: 1) SSH connection settings used by this object instead of the provider configuration, as a workaround for dynamic providers. It accepts the same arguments as the provider plus an `id`, which identifies the connection in the connection pool and for locking. (see [below for nested schema](#nestedblock--provider_override))
-- `recycle_path` (String) Absolute path of a directory in which a directory named after the current unix timestamp is created to hold the file when it is destroyed. When empty, the file is deleted. Defaults to an empty string.
+- `recycle_path` (String) Absolute path of a directory in which a directory named after the current unix timestamp and a random suffix is created to hold the file when it is destroyed. When empty, the file is deleted. Defaults to an empty string.
 
 ### Read-Only
 

@@ -18,17 +18,15 @@ LABEL org.opencontainers.image.title="terraform-provider-linux-test-sshd" \
       org.opencontainers.image.documentation="https://github.com/lentidas/terraform-provider-linux#developing-the-provider" \
       org.opencontainers.image.base.name="${DEBIAN_IMAGE}"
 
-# openssh-client provides the scp binary the provider's communicator calls on the server to upload files. The tests
-# validate their results with `[ a == b ]` in scripts that Terraform runs through /bin/sh, which dash (the Debian default)
-# rejects, so this image points /bin/sh at bash.
+# openssh-client provides the scp binary the provider's communicator calls on the server to upload files. /bin/sh stays
+# dash, the Debian default, so that the shell commands of the provider run here under the shell of the hosts it manages.
 RUN set -eux; \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         openssh-client \
         openssh-server && \
     rm -rf /var/lib/apt/lists/* && \
-    mkdir -p /run/sshd && \
-    ln -sf bash /bin/sh
+    mkdir -p /run/sshd
 
 COPY sshd_config.conf /etc/ssh/sshd_config.d/10-acceptance-tests.conf
 COPY --chmod=755 entrypoint.sh /usr/local/bin/entrypoint.sh

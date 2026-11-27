@@ -2,6 +2,7 @@ package linux
 
 import (
 	"fmt"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -74,28 +75,33 @@ func (l *linux) deleteFile(ctx context.Context, f *file) (err error) {
 	return l.remove(ctx, f.path, f.recyclePath)
 }
 
-func (l *linux) updateFile(ctx context.Context, old, new *file) (err error) {
+// updateFile reports whether the file was moved to its new path, so that a caller can record where the file really is
+// when a later step fails.
+func (l *linux) updateFile(ctx context.Context, old, new *file) (moved bool, err error) {
 	if old == nil {
-		return l.createFile(ctx, new)
+		return false, l.createFile(ctx, new)
 	}
 	if new == nil {
-		return l.deleteFile(ctx, old)
+		return false, l.deleteFile(ctx, old)
 	}
 
-	if old.path != new.path {
+	if path.Clean(old.path) != path.Clean(new.path) { // a double slash is not a move, and GNU mv refuses to move a file onto itself
 		if !new.overwrite {
 			if err = l.reservePath(ctx, new.path); err != nil {
 				return
 			}
 		}
-		err = l.mv(ctx, old.path, new.path)
-		if err != nil {
+		if err = l.mkdirp(ctx, filepath.Dir(new.path)); err != nil {
 			return
 		}
+		if err = l.mv(ctx, old.path, new.path); err != nil {
+			return
+		}
+		moved = true
 	}
 
 	f := &file{}
 	*f = *new
 	f.overwrite = true
-	return l.createFile(ctx, f)
+	return moved, l.createFile(ctx, f)
 }

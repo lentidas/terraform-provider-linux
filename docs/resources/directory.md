@@ -28,16 +28,16 @@ resource "linux_directory" "directory" {
 
 ### Required
 
-- `path` (String) Absolute path of the directory. The parent directory is created as needed. Changing it moves the contents of the current directory to the new one, except hidden entries (names starting with a dot), which are lost.
+- `path` (String) Absolute path of the directory. The parent directory is created as needed. Changing it renames the directory, with everything in it, hidden entries included. If the new path already exists, which requires `overwrite`, the contents are merged into it instead: entries of the current directory replace entries with the same name, other entries of the new directory stay, and the current directory is removed only after everything was copied. A new path inside the current one, or the other way around, is an error. When merging, a file and a directory with the same name make the merge fail and leave the current directory in place, ownership of the merged entries is only kept when the SSH user is root, and if removing the current directory fails after the copy, the contents exist in both places until the next apply retries.
 
 ### Optional
 
 - `group` (Number) ID of the group that owns the directory. Defaults to `0`.
 - `mode` (String) Directory mode as three or four octal digits, for example `755`. Defaults to `755`.
-- `overwrite` (Boolean) If `true`, an existing directory on the remote is reused on create or update, and its owner and mode are set, instead of being an error. Its contents are never touched. Defaults to `false`.
+- `overwrite` (Boolean) If `true`, an existing directory on the remote is reused on create or update, and its owner and mode are set, instead of being an error. On create its contents are never touched; when `path` changes to an existing directory, the contents are merged into it. Defaults to `false`.
 - `owner` (Number) ID of the user that owns the directory. Defaults to `0`.
 - `provider_override` (Block List, Max: 1) SSH connection settings used by this object instead of the provider configuration, as a workaround for dynamic providers. It accepts the same arguments as the provider plus an `id`, which identifies the connection in the connection pool and for locking. (see [below for nested schema](#nestedblock--provider_override))
-- `recycle_path` (String) Absolute path of a directory in which a directory named after the current unix timestamp is created to hold the directory when it is destroyed. When empty, the directory is deleted. Defaults to an empty string.
+- `recycle_path` (String) Absolute path of a directory in which a directory named after the current unix timestamp and a random suffix is created to hold the directory when it is destroyed. When empty, the directory is deleted. Defaults to an empty string.
 
 ### Read-Only
 
