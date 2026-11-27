@@ -227,8 +227,11 @@ func (h handlerFileResource) Update(ctx context.Context, rd *schema.ResourceData
 	}
 
 	old, new := h.newDiffedFile(rd)
-	err = l.updateFile(ctx, old, new)
+	moved, err := l.updateFile(ctx, old, new)
 	if err != nil {
+		if moved {
+			old.path = new.path // the file already left its old path, which would orphan it in the state
+		}
 		_ = h.updateResourceData(old, rd) // WARN: see https://github.com/hashicorp/terraform-plugin-sdk/issues/476
 		return diag.FromErr(err)
 	}
