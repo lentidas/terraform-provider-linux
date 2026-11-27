@@ -80,3 +80,16 @@ func TestFileUpdateRecordsTheNewPathWhenALaterStepFails(t *testing.T) {
 		"the file was moved, so the next plan must start from its real path")
 	require.Equal(t, "managed", got.ID)
 }
+
+func TestUpdateFileIgnoresASlashOnlyPathChange(t *testing.T) {
+	pool, commands := recordingPool(t, func(string) (string, string, int) { return "", "", 0 })
+	old := &file{path: "/srv/a/app.conf", ignoreContent: true, permission: permission{mode: "644"}}
+	new := &file{path: "/srv/a//app.conf", ignoreContent: true, permission: permission{mode: "644"}} // overwrite is false
+
+	moved, err := pool.def.updateFile(context.Background(), old, new)
+	require.NoError(t, err)
+	require.False(t, moved)
+	for _, c := range commands() {
+		require.NotRegexp(t, `\bmv\b|\[ ! -e`, c, "nothing may be moved or reserved, since GNU mv refuses to move a file onto itself")
+	}
+}

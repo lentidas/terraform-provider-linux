@@ -2,6 +2,7 @@ package linux
 
 import (
 	"fmt"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -84,7 +85,7 @@ func (l *linux) updateFile(ctx context.Context, old, new *file) (moved bool, err
 		return false, l.deleteFile(ctx, old)
 	}
 
-	if old.path != new.path {
+	if path.Clean(old.path) != path.Clean(new.path) { // a double slash is not a move, and GNU mv refuses to move a file onto itself
 		if !new.overwrite {
 			if err = l.reservePath(ctx, new.path); err != nil {
 				return
