@@ -12,6 +12,11 @@ Requirements
 - [Terraform](https://www.terraform.io/downloads.html) 0.12.x
 - [Go](https://golang.org/doc/install) at the version of the `go` directive in `go.mod`, which mise installs (to build the provider plugin)
 
+Supported systems
+-----------------
+
+The provider manages Linux hosts over SSH. The commands it runs only rely on POSIX shell features and on the GNU-style `stat`, `cp`, `mv` and `scp`, so it is expected to work against any mainstream Linux distribution. It is only tested against Debian, which is what the maintainer uses, through the acceptance tests in `build/docker`. Other distributions, including BusyBox-based ones such as Alpine, are untested, and systems that are not Linux are not supported, because the provider reads ownership and modes with `stat -c`. Reports and fixes for other distributions are welcome.
+
 Usage
 -----
 
@@ -71,7 +76,7 @@ Developing The Provider
 
 ### Local OpenTofu development
 
-This fork uses the OpenTofu provider address `registry.opentofu.org/lentidas/linux`. The current local package version is `0.7.2`; it is not a published registry release. The Go module path remains unchanged to keep the patch compatible with upstream imports.
+The provider is published on the OpenTofu registry as `registry.opentofu.org/lentidas/linux`, so a normal `required_providers` entry installs it. The steps below build and install a local package instead, which is useful to try a change before it is released.
 
 Development tasks are defined in `mise.toml`, which also pins the Go version used locally and in CI. Install [mise](https://mise.jdx.dev/) and run `mise tasks` to list them. The first `mise run` asks you to trust the file (`mise trust`).
 
@@ -93,7 +98,7 @@ tofu validate
 tofu plan
 ```
 
-The caller pins `lentidas/linux` to `0.7.2`; the reusable module accepts `>= 0.7.2`. No global OpenTofu configuration changes are needed. Once initialized, normal `tofu` commands use the installed fork.
+Pin the caller's `lentidas/linux` version to the version you built. No global OpenTofu configuration changes are needed. Once initialized, normal `tofu` commands use the installed local package.
 
 When migrating an existing encrypted local state, run this command separately before `init`, with no concurrent state operations. OpenTofu locks the state and creates a backup. The existing variable file supplies the encryption passphrase; do not put its value on the command line.
 
@@ -141,5 +146,11 @@ Versions follow [Semantic Versioning](https://semver.org/) and are derived by [r
 
 The workflows read their credentials from repository secrets (for example `REPOSITORY_BOT_APP_ID` for the GitHub App and `GPG_PRIVATE_KEY` for signing); see `.github/workflows/` for the complete list. A GitHub App token is used instead of `GITHUB_TOKEN` because tags created with the latter do not trigger the release workflow. Dependency updates come from Renovate, configured in `.renovaterc.json`.
 
+#### Publishing to the OpenTofu registry
+
+The provider is listed on the [OpenTofu registry](https://github.com/opentofu/registry), which indexes the GitHub releases of this repository, so every new release appears there on its own. The Terraform registry is not used. A listing needs two one-time submissions, made through the issue forms of the registry in the GitHub web interface: the [signing key form](https://github.com/opentofu/registry/issues/new?assignees=&labels=provider-key%2Csubmission&projects=&template=provider_key.yml&title=Provider+Key%3A+) with the public half of the release signing key (`gpg --armor --export <key id>`), and the [provider form](https://github.com/opentofu/registry/issues/new?assignees=&labels=provider%2Csubmission&projects=&template=provider.yml&title=Provider%3A+) with the repository. They only need repeating if the signing key changes or the repository moves.
+
 > [!IMPORTANT]
-> A GitHub release is not a registry listing. Publishing `lentidas/linux` to the OpenTofu registry is a separate step, and the first automated release is expected to also be `0.7.2`, the version used by the local mirror build above. Switch from the mirror to the released package with `tofu init -upgrade` and review the regenerated lock file.
+> The registry does not process issues created with the `gh` CLI or the API, so use the web forms.
+
+The registry reads the signed `SHA256SUMS` file and its `.sig` signature from each release, so a release is only accepted when it is signed with a submitted key. A `terraform-registry-manifest.json` asset is optional: without it the registry assumes protocol version `5.0`, which is what this SDK v2 provider speaks. Published versions are immutable, so a fix always needs a new release. To move from a local package to the published one, run `tofu init -upgrade` and review the regenerated lock file.
