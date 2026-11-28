@@ -3,7 +3,7 @@ module github.com/lentidas/terraform-provider-linux
 go 1.27.4
 
 require (
-	al.essio.dev/pkg/shellescape v1.6.0
+	al.essio.dev/pkg/shellescape v1.6.1
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/google/uuid v1.6.0
